@@ -1388,7 +1388,7 @@ const newItems=[];
 const todayDispatch={};
 if(dispatchData&&dispatchData.length){
   dispatchData.forEach(r=>{
-    const code=(r['Code']||r['Code ']||r['Item']||r['Item ']||'').trim();
+    const code=(r['Code']||r['Code ']||r['code']||r['Item']||r['Item ']||Object.values(r)[1]||'').trim();
     const boxes=parseFloat((r['Boxes']||r['Boxes ']||'0').toString().replace(/,/g,''))||0;
     if(!code||!boxes)return;
     todayDispatch[code]=(todayDispatch[code]||0)+boxes;
