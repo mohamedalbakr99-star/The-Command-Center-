@@ -512,6 +512,7 @@ brand:[
 {id:'forecast', label:'Forecast'},
 {id:'sold',     label:'Shipped'},
 {id:'ach',      label:'Ach%'},
+{id:'today_disp', label:"Today's Dispatch"},
 {id:'rem_fc',   label:'Rem. Forecast'},
 {id:'avail',    label:'Stock Available'},
 {id:'hold',     label:'Hold'},
@@ -528,7 +529,7 @@ function ccGet(tbl){
     if(s){
       let cols=JSON.parse(s);
       // Auto-add today_disp if missing (new column)
-      if(tbl==='cmd'&&!cols.includes('today_disp')){
+      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('today_disp')){
         const ri=cols.indexOf('rem_fc');
         if(ri>=0)cols.splice(ri,0,'today_disp');else{const ai=cols.indexOf('ach');cols.splice(ai>=0?ai+1:cols.length,0,'today_disp');}
         localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
@@ -637,13 +638,18 @@ const _now2=new Date();
 const _curYM=_now2.getFullYear()+'-'+String(_now2.getMonth()+1).padStart(2,'0');
 const _todayDay=_now2.getDate();
 const _daysInM=new Date(_now2.getFullYear(),_now2.getMonth()+1,0).getDate();
+// Find last day with actual sales
+let _lastDayWithSales=0;
+for(let i=1;i<=_todayDay;i++){
+  if((dayRevMap[i]||0)>0)_lastDayWithSales=i;
+}
 for(let i=1;i<=_daysInM;i++){
 const dayStr=_curYM+'-'+String(i).padStart(2,'0');
 labels.push(String(i));
 cumActual+=dayRevMap[i]||0;
 cumTarget+=dailyTgt;
-// Actual line stops at today
-sc.push(i<=_todayDay&&cumActual>0?+(cumActual/1e6).toFixed(2):null);
+// Actual line stops at last day that has sales
+sc.push(i<=_lastDayWithSales?+(cumActual/1e6).toFixed(2):null);
 tc.push(+(cumTarget/1e6).toFixed(2));
 }
 const act=_k.may_actual_revenue;
@@ -1072,6 +1078,7 @@ const BCOLS=[
 {id:'forecast', label:'Forecast('+u+')',   sk:'forecast_boxes'},
 {id:'sold',     label:'Shipped ('+u+')',   sk:'may_sold_boxes'},
 {id:'ach',      label:'Ach%',              sk:'forecast_achievement_pct'},
+{id:'today_disp',label:"Today's Disp.("+u+")", sk:'today_dispatch_boxes'},
 {id:'rem_fc',   label:'Rem.FC('+u+')',     sk:'rem_forecast_boxes'},
 {id:'avail',    label:'Avail.('+u+')',     sk:'avail_boxes'},
 {id:'hold',     label:'Hold('+u+')',       sk:'hold_boxes'},
@@ -1103,7 +1110,8 @@ return b[m[sk]]??b[sk]??0;
 if(brandUnit==='kg'){
 const m={forecast_boxes:'forecast_kg',may_sold_boxes:'may_sold_kg',rem_forecast_boxes:'rem_forecast_kg',
 avail_boxes:'avail_kg',hold_boxes:'hold_kg',dispatch_boxes:'dispatch_kg',
-production_gap_boxes:'production_gap_kg',near_boxes:'near_boxes'};
+production_gap_boxes:'production_gap_kg',near_boxes:'near_boxes',
+today_dispatch_boxes:'today_dispatch_kg'};
 return b[m[sk]]??b[sk]??0;
 }
 return b[sk]??0;
@@ -1126,6 +1134,7 @@ rem_fc:`<td style="color:var(--amber);font-weight:600;${bg}">${fmtN(bv(b,'rem_fo
 avail:`<td style="font-weight:600;color:var(--text);${bg}">${fmtN(bv(b,'avail_boxes'))}</td>`,
 hold:`<td style="color:var(--purple);${bg}">${b.hold_boxes>0?fmtN(bv(b,'hold_boxes')):'-'}</td>`,
 dispatch:`<td style="color:var(--green);font-weight:600;${bg}">${fmtN(bv(b,'dispatch_boxes'))}</td>`,
+today_disp:`<td style="color:var(--amber);font-weight:600;${bg}">${(b.today_dispatch_boxes||0)>0?fmtN(bv(b,'today_dispatch_boxes')):'-'}</td>`,
 trucks:`<td style="color:var(--blue);text-align:center;${bg}">${b.trucks>0?b.trucks:'-'}</td>`,
 svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${Math.min(pct,200)/200*100}%;background:${pc}"></div></div><span class="pct-t" style="color:${pc}">${pct>0?pct+'%':'-'}</span></div></td>`,
 gap:`<td style="color:${b.production_gap_boxes>0?'var(--red)':'var(--text3)'};${bg}">${b.production_gap_boxes>0?fmtN(bv(b,'production_gap_boxes')):'-'}</td>`,
