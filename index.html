@@ -1472,13 +1472,18 @@ const bd=bMap[b];bd.items++;bd.item_codes.push(it.code);
 ['avail','hold','forecast','dispatch','production_gap'].forEach(k=>{
 bd[k+'_boxes']+=it[k+'_boxes'];bd[k+'_pallets']+=it[k+'_pallets'];bd[k+'_kg']+=it[k+'_kg']||0;
 });
+bd.today_dispatch_boxes=(bd.today_dispatch_boxes||0)+(it.today_dispatch_boxes||0);
+bd.today_dispatch_pallets=(bd.today_dispatch_pallets||0)+(it.today_dispatch_pallets||0);
+bd.today_dispatch_kg=(bd.today_dispatch_kg||0)+(it.today_dispatch_kg||0);
 bd.may_sold_boxes+=it.may_sold_boxes;bd.may_sold_pallets+=it.may_sold_pallets;bd.may_sold_kg+=it.may_sold_kg_total;
 bd.rem_forecast_boxes+=it.rem_forecast_boxes;bd.rem_forecast_pallets+=it.rem_forecast_pallets;bd.rem_forecast_kg+=it.rem_forecast_kg;
 bd.trucks+=it.trucks;bd.near_boxes+=it.near;
 });
 Object.values(bMap).forEach(bd=>{
-const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes,rem=Math.max(0,fc2-sold);
+const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes,tdb=bd.today_dispatch_boxes||0;
+const rem=Math.max(0,fc2-sold-tdb);
 bd.rem_forecast_boxes=rem;
+bd.production_gap_boxes=Math.max(0,rem-bd.avail_boxes);
 bd.forecast_achievement_pct=fc2>0?Math.round(sold/fc2*1000)/10:0;
 bd.stock_vs_tgt=rem>0?Math.round(bd.avail_boxes/rem*1000)/10:0;
 });
