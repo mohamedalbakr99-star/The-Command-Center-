@@ -1384,22 +1384,16 @@ console.log('FG01 expRows:',fg01Rows.map(r=>r.code+'_'+r.expiry));
 }
 const newItems=[];
 // ── TODAY'S DISPATCH ──
+// All items in dispatch sheet = today's dispatch (sheet cleared daily)
 const todayDispatch={};
-const _todayISO=new Date().toISOString().slice(0,10);
 if(dispatchData&&dispatchData.length){
   dispatchData.forEach(r=>{
-    const dateStr=(r['Date']||r['Date ']||'').trim();
-    const code=(r['Code']||r['Code ']||r['Item']||'').trim();
+    const code=(r['Code']||r['Code ']||r['Item']||r['Item ']||'').trim();
     const boxes=parseFloat((r['Boxes']||r['Boxes ']||'0').toString().replace(/,/g,''))||0;
-    if(!code||!boxes||!dateStr)return;
-    const do2=new Date(dateStr);
-    if(isNaN(do2))return;
-    const dISO=do2.getFullYear()+'-'+String(do2.getMonth()+1).padStart(2,'0')+'-'+String(do2.getDate()).padStart(2,'0');
-    if(dISO===_todayISO){
-      todayDispatch[code]=(todayDispatch[code]||0)+boxes;
-    }
+    if(!code||!boxes)return;
+    todayDispatch[code]=(todayDispatch[code]||0)+boxes;
   });
-  console.log("Today's dispatch loaded:",Object.keys(todayDispatch).length,'items');
+  console.log("Today's dispatch loaded:",Object.keys(todayDispatch).length,'items',todayDispatch);
 }
 
 const allCodes=new Set([...Object.keys(avail),...Object.keys(hold),...Object.keys(fc),...Object.keys(maySoldKg),...Object.keys(todayDispatch)]);
