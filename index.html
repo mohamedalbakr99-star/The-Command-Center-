@@ -1244,7 +1244,7 @@ const r=await fetch(API_URL+'?sheet='+sheet,{redirect:'follow'});
 if(!r.ok)throw new Error('HTTP '+r.status+' for '+sheet);
 const text=await r.text();
 if(!text||text.trim().startsWith('<'))throw new Error('Bad response for '+sheet);
-return parseTSV(text,sheet==='dispatch'?',':'\t');
+return parseTSV(text);
 }
 async function refreshFromSheets(){
 const btn=document.getElementById('refreshBtn');
