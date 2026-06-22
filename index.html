@@ -1226,12 +1226,13 @@ function fmtN(n){if(!n&&n!==0)return'0';return Number(n).toLocaleString('en-US',
 function fmtK(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString();}
 function expC(d){const days=(new Date(d)-TODAY)/864e5;return days<30?'var(--red)':days<90?'var(--near)':days<180?'var(--amber)':'var(--text3)';}
 const API_URL='https://script.google.com/macros/s/AKfycbwHwv9tu6I-HyBk-R994XU9e9xN0GSIPR86vwkI354Zps6sw8TiCMkzeK5kLxTq2W_RDQ/exec';
-function parseTSV(text){
+function parseTSV(text,sep){
+sep=sep||'\t';
 const lines=text.trim().split('\n');
 if(!lines.length)return[];
-const hdrs=lines[0].split('\t').map(x=>x.trim());
+const hdrs=lines[0].split(sep).map(x=>x.trim());
 return lines.slice(1).filter(l=>l.trim()).map(line=>{
-const vals=line.split('\t');
+const vals=line.split(sep);
 const obj={};
 hdrs.forEach((hdr,i)=>{obj[hdr]=(vals[i]||'').trim();obj[hdr.trim()]=(vals[i]||'').trim();});
 return obj;
@@ -1243,7 +1244,7 @@ const r=await fetch(API_URL+'?sheet='+sheet,{redirect:'follow'});
 if(!r.ok)throw new Error('HTTP '+r.status+' for '+sheet);
 const text=await r.text();
 if(!text||text.trim().startsWith('<'))throw new Error('Bad response for '+sheet);
-return parseTSV(text);
+return parseTSV(text,sheet==='dispatch'?',':'\t');
 }
 async function refreshFromSheets(){
 const btn=document.getElementById('refreshBtn');
