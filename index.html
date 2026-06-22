@@ -251,7 +251,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
 <div class="page active" id="page-0">
   <div style="margin-top:16px">
     <div class="kpi-section ks-stock"><div class="kpi-section-label">📦 Stock</div><div class="kpi-row" id="kpiStock"></div></div>
-    <div class="kpi-section ks-sales"><div class="kpi-section-label">💰 Sales — May 2026</div><div class="kpi-row" id="kpiSales"></div></div>
+    <div class="kpi-section ks-sales"><div class="kpi-section-label">💰 Sales — <span id="curMonthLabel">May 2026</span></div><div class="kpi-row" id="kpiSales"></div></div>
     <div class="kpi-section ks-plan"><div class="kpi-section-label">⚡ Planning</div><div class="kpi-row" id="kpiPlan"></div></div>
     <div class="kpi-section ks-expiry"><div class="kpi-section-label">⚠️ Expiry Alerts — Available + Hold</div><div class="kpi-row" id="kpiExpiry"></div></div>
   </div>
@@ -259,7 +259,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
   <div class="stage-grid" id="stageGrid"></div>
   <div class="charts-row">
     <div class="chart-card">
-      <div class="ct">May 2026 — Daily Cumulative Sales vs Target</div>
+      <div class="ct" id="chartMayTitle">May 2026 — Daily Cumulative Sales vs Target</div>
       <div class="may-ks" id="mayKpis"></div>
       <div class="cw"><canvas id="chartMay"></canvas></div>
     </div>
@@ -484,12 +484,12 @@ const CC_DEFS={
 cmd:[
 {id:'brand',    label:'Brand'},
 {id:'forecast', label:'Forecast'},
-{id:'sold',     label:'Sold May'},
+{id:'sold',     label:'Shipped'},
 {id:'ach',      label:'Achievement%'},
+{id:'today_disp', label:"Today's Dispatch"},
 {id:'rem_fc',   label:'Rem. Forecast'},
 {id:'avail',    label:'Stock Available'},
 {id:'dispatch',   label:'Ready to Ship from FC'},
-{id:'today_disp', label:"Today's Dispatch"},
 {id:'hold',       label:'Hold'},
 {id:'trucks',   label:'Trucks'},
 {id:'svt',      label:'Stock vs Rem%'},
@@ -510,7 +510,7 @@ exp:[
 brand:[
 {id:'items',    label:'Items'},
 {id:'forecast', label:'Forecast'},
-{id:'sold',     label:'Sold May'},
+{id:'sold',     label:'Shipped'},
 {id:'ach',      label:'Ach%'},
 {id:'rem_fc',   label:'Rem. Forecast'},
 {id:'avail',    label:'Stock Available'},
@@ -529,8 +529,8 @@ function ccGet(tbl){
       let cols=JSON.parse(s);
       // Auto-add today_disp if missing (new column)
       if(tbl==='cmd'&&!cols.includes('today_disp')){
-        const di=cols.indexOf('dispatch');
-        if(di>=0)cols.splice(di+1,0,'today_disp');else cols.push('today_disp');
+        const ri=cols.indexOf('rem_fc');
+        if(ri>=0)cols.splice(ri,0,'today_disp');else{const ai=cols.indexOf('ach');cols.splice(ai>=0?ai+1:cols.length,0,'today_disp');}
         localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
       }
       return cols;
@@ -633,12 +633,17 @@ if(day>0)dayRevMap[day]=(dayRevMap[day]||0)+d.sales;
 }
 const labels=[];const sc=[];const tc=[];
 let cumActual=0;let cumTarget=0;
-for(let i=1;i<=31;i++){
-const dayStr='2026-05-'+String(i).padStart(2,'0');
+const _now2=new Date();
+const _curYM=_now2.getFullYear()+'-'+String(_now2.getMonth()+1).padStart(2,'0');
+const _todayDay=_now2.getDate();
+const _daysInM=new Date(_now2.getFullYear(),_now2.getMonth()+1,0).getDate();
+for(let i=1;i<=_daysInM;i++){
+const dayStr=_curYM+'-'+String(i).padStart(2,'0');
 labels.push(String(i));
 cumActual+=dayRevMap[i]||0;
 cumTarget+=dailyTgt;
-sc.push(dayStr<=todayS&&cumActual>0?+(cumActual/1e6).toFixed(2):null);
+// Actual line stops at today
+sc.push(i<=_todayDay&&cumActual>0?+(cumActual/1e6).toFixed(2):null);
 tc.push(+(cumTarget/1e6).toFixed(2));
 }
 const act=_k.may_actual_revenue;
@@ -688,6 +693,7 @@ if(activeFilters.chip==='near_exp'&&it.near<=0)return false;
 if(activeFilters.chip==='above_tgt'&&it.stock_vs_tgt<=120)return false;
 if(activeFilters.chip==='no_plan'&&it.forecast_boxes>0)return false;
 if(activeFilters.chip==='hold'&&it.hold_boxes<=0)return false;
+if(activeFilters.chip==='today_disp'&&(!(it.today_dispatch_boxes>0)))return false;
 return true;
 });
 }
@@ -713,10 +719,10 @@ const COLS=[
 {id:'forecast', label:`Forecast (${u})`,             sk:'forecast_boxes',           tip:'forecast'},
 {id:'sold',     label:`Shipped (${u})`,               sk:'may_sold_boxes',            tip:'sold'},
 {id:'ach',      label:'Ach%',                        sk:'forecast_achievement_pct',  tip:'ach'},
+{id:'today_disp',label:`Today's Dispatch (${u})`,    sk:'today_dispatch_boxes'},
 {id:'rem_fc',   label:`Rem. Forecast (${u})`,        sk:'rem_forecast_boxes',        tip:'rem'},
 {id:'avail',    label:`Stock Avail. (${u})`,         sk:'avail_boxes',               tip:'avail'},
 {id:'dispatch',   label:`Ready to Dispatch (${u})`,   sk:'dispatch_boxes',            tip:'dispatch'},
-{id:'today_disp',label:`Today's Dispatch (${u})`,    sk:'today_dispatch_boxes'},
 {id:'hold',     label:`Hold (${u})`,                 sk:'hold_boxes',                tip:'hold'},
 {id:'trucks',   label:'🚛 Trucks',                   sk:'trucks',                    tip:'trucks'},
 {id:'svt',      label:'vs Rem%',                     sk:'stock_vs_tgt',              tip:'svt'},
@@ -948,7 +954,10 @@ if(s&&!r.desc.toLowerCase().includes(s)&&!r.code.toLowerCase().includes(s))retur
 if(expBrandF&&r.brand!==expBrandF)return false;
 if(expCatF&&r.cat!==expCatF)return false;
 if(expActionF&&r.action!==expActionF)return false;
-if(expStageF&&r.stage!==expStageF)return false;
+if(expStageF==='__critical_no_action'){
+  if(!(r.stage==='Near Expirey'||r.stage==='Expired'))return false;
+  if(ACTIONS[r.code+'_'+r.expiry])return false;
+}else if(expStageF&&r.stage!==expStageF)return false;
 if(expRange==='30'&&!(r.days>=0&&r.days<=30))return false;
 if(expRange==='30_60'&&!(r.days>30&&r.days<=60))return false;
 if(expRange==='60_90'&&!(r.days>60&&r.days<=90))return false;
@@ -1148,12 +1157,12 @@ let datasets;
 if(brandChartMode==='gap'){
 datasets=[
 {label:`Remaining to FC (${uLabel})`,data:data.map(b=>bv2(b,'rem_forecast_boxes')),backgroundColor:'rgba(226,75,74,.7)',borderRadius:3,borderSkipped:false},
-{label:`Sold May (${uLabel})`,data:data.map(b=>bv2(b,'may_sold_boxes')),backgroundColor:'rgba(29,185,122,.75)',borderRadius:3,borderSkipped:false},
+{label:`Shipped (${uLabel})`,data:data.map(b=>bv2(b,'may_sold_boxes')),backgroundColor:'rgba(29,185,122,.75)',borderRadius:3,borderSkipped:false},
 ];
 } else {
 datasets=[
 {label:`Forecast (${uLabel})`,data:data.map(b=>bv2(b,'forecast_boxes')),backgroundColor:'rgba(240,160,32,.5)',borderRadius:3,borderSkipped:false,borderWidth:1,borderColor:'rgba(240,160,32,.9)'},
-{label:`Sold May (${uLabel})`,data:data.map(b=>bv2(b,'may_sold_boxes')),backgroundColor:'rgba(29,185,122,.75)',borderRadius:3,borderSkipped:false},
+{label:`Shipped (${uLabel})`,data:data.map(b=>bv2(b,'may_sold_boxes')),backgroundColor:'rgba(29,185,122,.75)',borderRadius:3,borderSkipped:false},
 ];
 }
 brandChartInst=new Chart(document.getElementById('chartBrand'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9aa0b8',font:{size:10},boxWidth:10}},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${fmtN(c.parsed.y)} ${uLabel}`}}},scales:{x:{grid:go,ticks:{color:'#5a6280',font:{size:9}}},y:{grid:go,ticks:{color:'#5a6280',font:{size:9},callback:v=>fmtN(v)}}},onClick:(evt,els)=>{if(els.length)selectBrand(data[els[0].index].brand);}}});
@@ -1182,7 +1191,7 @@ brandExpChartInst=new Chart(document.getElementById('chartBrandExp'),{type:'bar'
 function exportTableExcel(){
 const items=getFiltered(),u=unit==='boxes'?'Boxes':unit==='pallets'?'Pallets':'KG';
 function gv2(it,id){if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',gap:'production_gap_pallets'};return it[m[id]]??0;}if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',gap:'production_gap_kg'};return it[m[id]]??0;}const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',gap:'production_gap_boxes'};return it[m[id]]??0;}
-const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Sold May('+u+')','Ach%','Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Dispatch('+u+')','Trucks','vs Rem%','Gap('+u+')','Nearest Expiry'];
+const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Shipped('+u+')','Ach%','Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Dispatch('+u+')','Trucks','vs Rem%','Gap('+u+')','Nearest Expiry'];
 const rows=items.map(it=>[it.code,it.desc,it.brand,it.category,gv2(it,'forecast'),gv2(it,'sold'),it.forecast_achievement_pct,gv2(it,'rem_fc'),gv2(it,'avail'),gv2(it,'hold'),gv2(it,'dispatch'),it.trucks,it.stock_vs_tgt,gv2(it,'gap'),it.nearest_expiry]);
 dlCSV([hdrs,...rows],'zamil_items_'+today()+'.csv');
 }
@@ -1196,7 +1205,7 @@ dlCSV([hdrs,...data],'zamil_expiry_'+today()+'.csv');
 function exportBrandExcel(){
 const _BSE=window._LIVE&&window._BRAND_SUMMARY?window._BRAND_SUMMARY:BRANDS_SUMMARY;
 const brands=_BSE.filter(b=>b.brand&&b.brand!=='nan');
-const hdrs=['Brand','Items','Forecast(Bx)','Sold May(Bx)','Ach%','Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Dispatch(Bx)','Trucks','vs Rem%','Gap(Bx)','Near Exp(Bx)'];
+const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%','Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Dispatch(Bx)','Trucks','vs Rem%','Gap(Bx)','Near Exp(Bx)'];
 const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.stock_vs_tgt,b.production_gap_boxes,b.near_boxes]);
 dlCSV([hdrs,...data],'zamil_brands_'+today()+'.csv');
 }
@@ -1409,10 +1418,12 @@ const av=avail[code]||0,ho=hold[code]||0,fcv=fc[code]||0;
 const st=stages[code]||{Fresh:0,'Mid of shelf life':0,'Near Expirey':0,Expired:0};
 const soldBx=ck>0?Math.round((maySoldKg[code]||0)/ck*10)/10:0;
 const avgBx=ck>0?Math.round((histKg[code]||0)/4/ck*10)/10:0;
-const remFc=Math.max(0,fcv-soldBx);
 const todayDisp=todayDispatch[code]||0;
+// Rem Forecast = Forecast - Shipped - Today's Dispatch
+const remFc=Math.max(0,fcv-soldBx-todayDisp);
 const disp=Math.min(av,remFc);
-const gap=Math.max(0,remFc-av-todayDisp);
+// Production Gap = Rem Forecast - Available
+const gap=Math.max(0,remFc-av);
 const dispP=ps>0?Math.round(disp/ps*100)/100:0;
 const trucks=dispP>0?Math.round(dispP/26*10)/10:0;
 const svt=remFc>0?Math.round(av/remFc*1000)/10:0;
@@ -1479,7 +1490,10 @@ const key=mNameMap[mName]||dateStr;
 if(key)mRevMap[key]=(mRevMap[key]||0)+rev;
 });
 const dayRevMap={};
+const _curMo=new Date();
+const _curYMM=_curMo.getFullYear()+'-'+String(_curMo.getMonth()+1).padStart(2,'0');
 Object.entries(mayRev).forEach(([ds,rev])=>{
+if(!ds.startsWith(_curYMM))return;
 const day=parseInt(ds.slice(8));
 if(day>0)dayRevMap[day]=(dayRevMap[day]||0)+rev;
 });
@@ -1527,6 +1541,12 @@ renderExpKPIs();renderCriticalCard();renderExpChart();renderStagePie();renderExp
 renderBrandTable();renderBrandChart();
 initBrandPage();
 document.getElementById('hdrDate').textContent='🟢 Live — '+new Date().toLocaleTimeString('en-GB');
+  // Update dynamic month labels
+  const _mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const _now=new Date();
+  const _mLabel=_mNames[_now.getMonth()]+' '+_now.getFullYear();
+  const _cm=document.getElementById('curMonthLabel');if(_cm)_cm.textContent=_mLabel;
+  const _cmt=document.getElementById('chartMayTitle');if(_cmt)_cmt.textContent=_mLabel+' — Daily Sales vs Target';
 try{
 const snapshot={
 items:newItems,exp:expRows,brand:Object.values(bMap),
