@@ -1388,9 +1388,12 @@ const newItems=[];
 // All items in dispatch sheet = today's dispatch (sheet cleared daily)
 const todayDispatch={};
 if(dispatchData&&dispatchData.length){
+  console.log('Dispatch raw data:',dispatchData[0]);
+  console.log('Dispatch keys:',Object.keys(dispatchData[0]));
   dispatchData.forEach(r=>{
     const code=(r['Code']||r['Code ']||r['code']||r['Item']||r['Item ']||Object.values(r)[1]||'').trim();
     const boxes=parseFloat((r['Boxes']||r['Boxes ']||'0').toString().replace(/,/g,''))||0;
+    console.log('Dispatch row - code:',JSON.stringify(code),'boxes:',boxes);
     if(!code||!boxes)return;
     todayDispatch[code]=(todayDispatch[code]||0)+boxes;
   });
