@@ -1249,10 +1249,11 @@ async function refreshFromSheets(){
 const btn=document.getElementById('refreshBtn');
 if(btn){btn.textContent='⏳ Loading...';btn.disabled=true;}
 try{
-const [S,M,F,H,C,A]=await Promise.all([
+const [S,M,F,H,C,A,D]=await Promise.all([
 fetchSheet('stock'),fetchSheet('master'),fetchSheet('forecast'),
 fetchSheet('sales_hist'),fetchSheet('sales_cur'),
 fetchSheet('actions').catch(e=>{console.warn('Actions fetch failed:',e);return [];}),
+fetchSheet('dispatch').catch(e=>{console.warn('Dispatch fetch failed:',e);return [];}),
 ]);
 console.log('Fetched:',S.length,M.length,F.length,H.length,C.length,'Actions:',A.length,'Dispatch:',D.length);
 processLive(S,M,F,H,C,A,D);
