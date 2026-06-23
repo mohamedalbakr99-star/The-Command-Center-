@@ -591,7 +591,7 @@ document.getElementById('kpiStock').innerHTML=[
 {l:'Hold Boxes',v:fmt(k.total_hold_boxes),u:'Boxes',s:'On hold — not in calculations',a:'var(--purple)'},
 ].map(c=>`<div class="kpi-card" style="--ac:${c.a}"><div class="kpi-l">${c.l}</div><div class="kpi-v">${c.v}<span class="kpi-u">${c.u}</span></div><div class="kpi-s">${c.s}</div>${c.det?`<div class="kpi-detail">${c.det.map(x=>`<div class="kpi-detail-item"><span>${x.l}</span><span>${x.v}</span></div>`).join('')}</div>`:''}</div>`).join('');
 document.getElementById('kpiSales').innerHTML=[
-{l:'May Revenue',v:'SAR '+fmtK(k.may_actual_revenue),s:pct+'% of target',a:'var(--green)',det:[{l:'Target',v:'SAR '+fmtK(k.may_target_revenue)},{l:'Gap',v:'SAR '+fmtK(k.may_target_revenue-k.may_actual_revenue)}]},
+{l:(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()])+' Revenue',v:'SAR '+fmtK(k.may_actual_revenue),s:pct+'% of target',a:'var(--green)',det:[{l:'Target',v:'SAR '+fmtK(k.may_target_revenue)},{l:'Gap',v:'SAR '+fmtK(k.may_target_revenue-k.may_actual_revenue)}]},
 {l:'Rem. Forecast',v:fmt(k.rem_forecast_boxes_total),u:'Boxes',s:'Original: '+fmt(k.total_forecast_boxes)+' · '+k.forecast_achievement_pct+'% shipped',a:'var(--amber)',det:[{l:'Shipped',v:fmt(k.may_sold_boxes_total)+' Bx'},{l:'Ach%',v:k.forecast_achievement_pct+'%'}]},
 ].map(c=>`<div class="kpi-card" style="--ac:${c.a}"><div class="kpi-l">${c.l}</div><div class="kpi-v">${c.v}${c.u?`<span class="kpi-u">${c.u}</span>`:''}</div><div class="kpi-s">${c.s}</div>${c.det?`<div class="kpi-detail">${c.det.map(x=>`<div class="kpi-detail-item"><span>${x.l}</span><span>${x.v}</span></div>`).join('')}</div>`:''}</div>`).join('');
 document.getElementById('kpiPlan').innerHTML=[
@@ -751,7 +751,7 @@ document.getElementById('tHead').innerHTML=`<tr><th class="th-tip${cmdSortCol===
 let items=getFiltered();
 if(cmdSortCol)items=[...items].sort((a,b)=>{const av=a[cmdSortCol]??'',bv=b[cmdSortCol]??'';return(typeof av==='number'?av-bv:String(av).localeCompare(String(bv)))*cmdSortDir;});
 const tot={};visCols.forEach(c=>{tot[c.id]=0;});
-items.forEach(it=>{visCols.forEach(c=>{if(['forecast','sold','rem_fc','avail','hold','dispatch','gap'].includes(c.id))tot[c.id]+=gv(it,c.id);if(c.id==='trucks')tot[c.id]+=it.trucks;});});
+items.forEach(it=>{visCols.forEach(c=>{if(['forecast','sold','rem_fc','avail','hold','dispatch','today_disp','gap'].includes(c.id))tot[c.id]+=gv(it,c.id);if(c.id==='trucks')tot[c.id]+=it.trucks;});});
 if(!items.length){document.getElementById('tBody').innerHTML=`<tr><td colspan="${visCols.length+1}" class="no-data">No items match filters</td></tr>`;document.getElementById('tFoot').textContent='No items';return;}
 function buildCell(c,it){
 const isSorted=cmdSortCol===c.sk;
@@ -779,7 +779,7 @@ expiry:`<td style="font-size:10px;color:${ec};white-space:nowrap;${bg}">${it.nea
 return map[c.id]||'<td>—</td>';
 }
 function totCell(c){
-const map={brand:'',forecast:`<td>${fmtN(tot.forecast)}</td>`,sold:`<td style="color:var(--blue)">${fmtN(tot.sold)}</td>`,ach:'<td>—</td>',rem_fc:`<td style="color:var(--amber)">${fmtN(tot.rem_fc)}</td>`,avail:`<td>${fmtN(tot.avail)}</td>`,dispatch:`<td style="color:var(--green)">${fmtN(tot.dispatch)}</td>`,hold:`<td>${fmtN(tot.hold)}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${fmtN(tot.trucks)}</td>`,svt:'<td>—</td>',gap:`<td style="text-align:center">${fmtN(tot.gap)}</td>`,expiry:'<td>—</td>'};
+const map={brand:'',forecast:`<td>${fmtN(tot.forecast)}</td>`,sold:`<td style="color:var(--blue)">${fmtN(tot.sold)}</td>`,ach:'<td>—</td>',rem_fc:`<td style="color:var(--amber)">${fmtN(tot.rem_fc)}</td>`,avail:`<td>${fmtN(tot.avail)}</td>`,dispatch:`<td style="color:var(--green)">${fmtN(tot.dispatch)}</td>`,today_disp:`<td style="color:var(--amber)">${tot.today_disp>0?fmtN(tot.today_disp):'-'}</td>`,hold:`<td>${fmtN(tot.hold)}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${fmtN(tot.trucks)}</td>`,svt:'<td>—</td>',gap:`<td style="text-align:center">${fmtN(tot.gap)}</td>`,expiry:'<td>—</td>'};
 return map[c.id]||'<td>—</td>';
 }
 document.getElementById('tBody').innerHTML=items.map(it=>{
@@ -1484,6 +1484,16 @@ const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes,tdb=bd.today_dispatch_boxes||
 const rem=Math.max(0,fc2-sold-tdb);
 bd.rem_forecast_boxes=rem;
 bd.production_gap_boxes=Math.max(0,rem-bd.avail_boxes);
+// Recalc pallets units
+const fcP=bd.forecast_pallets,soldP=bd.may_sold_pallets,tdbP=bd.today_dispatch_pallets||0;
+const remP=Math.max(0,fcP-soldP-tdbP);
+bd.rem_forecast_pallets=remP;
+bd.production_gap_pallets=Math.max(0,remP-bd.avail_pallets);
+// Recalc kg units
+const fcK=bd.forecast_kg,soldK=bd.may_sold_kg,tdbK=bd.today_dispatch_kg||0;
+const remK=Math.max(0,fcK-soldK-tdbK);
+bd.rem_forecast_kg=remK;
+bd.production_gap_kg=Math.max(0,remK-bd.avail_kg);
 bd.forecast_achievement_pct=fc2>0?Math.round(sold/fc2*1000)/10:0;
 bd.stock_vs_tgt=rem>0?Math.round(bd.avail_boxes/rem*1000)/10:0;
 });
@@ -1597,9 +1607,24 @@ return true;
 }</script>
 
 <script>// (disabled) document.addEventListener('contextmenu', e => e.preventDefault());
-// (disabled keydown)
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='C'||e.key==='J'))||(e.ctrlKey&&(e.key==='U'||e.key==='S'))){
+    e.preventDefault();return false;
+  }
+});
 
-// (disabled devtools detector)
+(function(){
+  let devtools={open:false};
+  const threshold=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
+      if(!devtools.open){
+        devtools.open=true;
+        document.body.innerHTML='<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0a0a0f;color:#fff;font-size:24px;font-family:monospace">🔒 DevTools detected</div>';
+      }
+    }
+  },1000);
+})();
 
 
 function askDownloadPassword(){
