@@ -516,7 +516,7 @@ brand:[
 {id:'rem_fc',   label:'Rem. Forecast'},
 {id:'avail',    label:'Stock Available'},
 {id:'hold',     label:'Hold'},
-{id:'dispatch', label:'Dispatch'},
+{id:'dispatch', label:'Ready to Dispatch'},
 {id:'trucks',   label:'Trucks'},
 {id:'svt',      label:'vs Rem%'},
 {id:'gap',      label:'Prod. Gap'},
@@ -664,6 +664,15 @@ const __MR=window._LIVE&&window._MONTHLY_REV?window._MONTHLY_REV:MONTHLY_REV;
 const revs=__MR.map(r=>+(r.revenue/1e6).toFixed(2));
 const avg=revs.reduce((a,b)=>a+b,0)/revs.length;
 document.getElementById('revSub').textContent='Avg: SAR '+fmtK(avg*1e6)+'/month';
+// Update title dynamically
+const _revTitleEl=document.getElementById('revTitle');
+if(_revTitleEl&&__MR.length>0){
+  const _mNms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _first=__MR[0].month;const _last=__MR[__MR.length-1].month;
+  const _fm=parseInt(_first.slice(5,7)),_lm=parseInt(_last.slice(5,7));
+  const _yr=_first.slice(0,4);
+  _revTitleEl.textContent='Monthly Revenue '+_mNms[_fm-1]+'–'+_mNms[_lm-1]+' '+_yr;
+}
 const revLabels=__MR.map(r=>{const mo=parseInt((r.month||'').slice(5,7));return['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo]||r.month;});
 new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr'],datasets:[{data:revs,backgroundColor:'rgba(55,138,221,.65)',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`SAR ${c.parsed.y}M`}}},scales:{x:{grid:go,ticks:{color:'#5a6280'}},y:{grid:go,ticks:{color:'#5a6280',callback:v=>v+'M'}}}}});
 }
@@ -700,6 +709,7 @@ if(activeFilters.chip==='above_tgt'&&it.stock_vs_tgt<=120)return false;
 if(activeFilters.chip==='no_plan'&&it.forecast_boxes>0)return false;
 if(activeFilters.chip==='hold'&&it.hold_boxes<=0)return false;
 if(activeFilters.chip==='today_disp'&&(!(it.today_dispatch_boxes>0)))return false;
+if(activeFilters.chip==='has_gap'&&(!(it.production_gap_boxes>0)))return false;
 return true;
 });
 }
@@ -1082,7 +1092,7 @@ const BCOLS=[
 {id:'rem_fc',   label:'Rem.FC('+u+')',     sk:'rem_forecast_boxes'},
 {id:'avail',    label:'Avail.('+u+')',     sk:'avail_boxes'},
 {id:'hold',     label:'Hold('+u+')',       sk:'hold_boxes'},
-{id:'dispatch', label:'Dispatch('+u+')',   sk:'dispatch_boxes'},
+{id:'dispatch', label:'Ready to Dispatch('+u+')',   sk:'dispatch_boxes'},
 {id:'trucks',   label:'🚛 Trucks',          sk:'trucks'},
 {id:'svt',      label:'vs Rem%',           sk:'stock_vs_tgt'},
 {id:'gap',      label:'Gap('+u+')',        sk:'production_gap_boxes'},
@@ -1200,8 +1210,8 @@ brandExpChartInst=new Chart(document.getElementById('chartBrandExp'),{type:'bar'
 function exportTableExcel(){
 const items=getFiltered(),u=unit==='boxes'?'Boxes':unit==='pallets'?'Pallets':'KG';
 function gv2(it,id){if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',gap:'production_gap_pallets'};return it[m[id]]??0;}if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',gap:'production_gap_kg'};return it[m[id]]??0;}const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',gap:'production_gap_boxes'};return it[m[id]]??0;}
-const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Shipped('+u+')','Ach%','Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Dispatch('+u+')','Trucks','vs Rem%','Gap('+u+')','Nearest Expiry'];
-const rows=items.map(it=>[it.code,it.desc,it.brand,it.category,gv2(it,'forecast'),gv2(it,'sold'),it.forecast_achievement_pct,gv2(it,'rem_fc'),gv2(it,'avail'),gv2(it,'hold'),gv2(it,'dispatch'),it.trucks,it.stock_vs_tgt,gv2(it,'gap'),it.nearest_expiry]);
+const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Shipped('+u+')','Ach%',"Today's Dispatch("+u+")",'Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Ready to Dispatch('+u+')','Trucks','vs Rem%','Gap('+u+')','Nearest Expiry'];
+const rows=items.map(it=>[it.code,it.desc,it.brand,it.category,gv2(it,'forecast'),gv2(it,'sold'),it.forecast_achievement_pct,gv2(it,'today_disp'),gv2(it,'rem_fc'),gv2(it,'avail'),gv2(it,'hold'),gv2(it,'dispatch'),it.trucks,it.stock_vs_tgt,gv2(it,'gap'),it.nearest_expiry]);
 dlCSV([hdrs,...rows],'zamil_items_'+today()+'.csv');
 }
 function exportExpExcel(){
@@ -1214,8 +1224,8 @@ dlCSV([hdrs,...data],'zamil_expiry_'+today()+'.csv');
 function exportBrandExcel(){
 const _BSE=window._LIVE&&window._BRAND_SUMMARY?window._BRAND_SUMMARY:BRANDS_SUMMARY;
 const brands=_BSE.filter(b=>b.brand&&b.brand!=='nan');
-const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%','Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Dispatch(Bx)','Trucks','vs Rem%','Gap(Bx)','Near Exp(Bx)'];
-const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.stock_vs_tgt,b.production_gap_boxes,b.near_boxes]);
+const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%',"Today's Dispatch(Bx)",'Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Ready to Dispatch(Bx)','Trucks','vs Rem%','Gap(Bx)','Near Exp(Bx)'];
+const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.today_dispatch_boxes||0,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.stock_vs_tgt,b.production_gap_boxes,b.near_boxes]);
 dlCSV([hdrs,...data],'zamil_brands_'+today()+'.csv');
 }
 function dlCSV(rows,filename){const csv=rows.map(r=>r.map(v=>typeof v==='string'&&(v.includes(',')||v.includes('"'))?`"${v.replace(/"/g,'""')}"`:v??'').join(',')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
@@ -1505,7 +1515,17 @@ const tRem=newItems.reduce((s,x)=>s+x.rem_forecast_boxes,0);
 const tGap=newItems.reduce((s,x)=>s+x.production_gap_boxes,0);
 const mayRevTotal=Object.values(mayRev).reduce((s,v)=>s+v,0);
 const mRevMap={};
-const mNameMap={'يناير':'2026-01','فبراير':'2026-02','مارس':'2026-03','ابريل':'2026-04','أبريل':'2026-04'};
+const _yr=new Date().getFullYear();
+const mNameMap={
+'يناير':_yr+'-01','فبراير':_yr+'-02','مارس':_yr+'-03','ابريل':_yr+'-04','أبريل':_yr+'-04',
+'مايو':_yr+'-05','يونيو':_yr+'-06','يوليو':_yr+'-07','اغسطس':_yr+'-08','أغسطس':_yr+'-08',
+'سبتمبر':_yr+'-09','اكتوبر':_yr+'-10','أكتوبر':_yr+'-10','نوفمبر':_yr+'-11','ديسمبر':_yr+'-12',
+'January':_yr+'-01','February':_yr+'-02','March':_yr+'-03','April':_yr+'-04','May':_yr+'-05',
+'June':_yr+'-06','July':_yr+'-07','August':_yr+'-08','September':_yr+'-09','October':_yr+'-10',
+'November':_yr+'-11','December':_yr+'-12',
+'Jan':_yr+'-01','Feb':_yr+'-02','Mar':_yr+'-03','Apr':_yr+'-04','May ':_yr+'-05',
+'Jun':_yr+'-06','Jul':_yr+'-07','Aug':_yr+'-08','Sep':_yr+'-09','Oct':_yr+'-10','Nov':_yr+'-11','Dec':_yr+'-12'
+};
 histData.forEach(r=>{
 const mName=(r['Month']||'').trim();
 const dateStr=(r['Date']||'').trim().slice(0,7);
@@ -1526,7 +1546,8 @@ window._EXP=expRows;
 window._BRAND_SUMMARY=Object.values(bMap);
 window._LIVE=true;
 window._DAY_REV=dayRevMap;
-window._MONTHLY_REV=Object.entries(mRevMap).sort().map(([month,revenue])=>({month,revenue}));
+const _curYMonth=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+window._MONTHLY_REV=Object.entries(mRevMap).filter(([m])=>m<_curYMonth).sort().map(([month,revenue])=>({month,revenue}));
 window._KPI={...KPI,
 total_avail_boxes:Math.round(tAv),
 total_avail_pallets:Math.round(newItems.reduce((s,x)=>s+x.avail_pallets,0)*10)/10,
