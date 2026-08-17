@@ -1664,24 +1664,9 @@ return true;
 }</script>
 
 <script>// (disabled) document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown',e=>{
-  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='C'||e.key==='J'))||(e.ctrlKey&&(e.key==='U'||e.key==='S'))){
-    e.preventDefault();return false;
-  }
-});
+// (temporarily disabled keydown - for debugging)
 
-(function(){
-  let devtools={open:false};
-  const threshold=160;
-  setInterval(()=>{
-    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
-      if(!devtools.open){
-        devtools.open=true;
-        document.body.innerHTML='<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0a0a0f;color:#fff;font-size:24px;font-family:monospace">🔒 DevTools detected</div>';
-      }
-    }
-  },1000);
-})();
+// (temporarily disabled devtools detector - for debugging)
 
 
 function askDownloadPassword(){
