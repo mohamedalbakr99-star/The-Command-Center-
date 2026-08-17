@@ -207,15 +207,12 @@ body.light .grp-header td{background:var(--bg3)}
 body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)}
 
 
-.exp-date-filter{background:linear-gradient(135deg,rgba(55,138,221,.08),rgba(29,185,122,.05));border:1px solid rgba(55,138,221,.25);border-radius:10px;padding:14px 18px;margin:12px 0}
-.exp-date-label{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px;letter-spacing:.4px;text-transform:uppercase}
-.exp-date-inputs{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
-.exp-date-group{display:flex;flex-direction:column;gap:4px}
-.exp-date-group label{font-size:10px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
-.exp-date-group input[type=month]{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;min-width:150px}
-.exp-date-group input[type=month]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(55,138,221,.15)}
-.exp-date-arrow{color:var(--text3);font-size:18px;padding-bottom:8px}
-.exp-date-clear{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s}
+.exp-date-filter{display:inline-flex;align-items:center;gap:8px;background:rgba(55,138,221,.06);border:1px solid rgba(55,138,221,.2);border-radius:8px;padding:6px 12px;margin:8px 0}
+.exp-date-label{font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.3px}
+.exp-date-filter input[type=month]{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px 8px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:130px;height:26px}
+.exp-date-filter input[type=month]:focus{border-color:var(--blue)}
+.exp-date-arrow{color:var(--text3);font-size:12px}
+.exp-date-clear{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:var(--font);transition:all .2s;height:26px}
 .exp-date-clear:hover{background:var(--red);color:#fff;border-color:var(--red)}
 </style>
 </head>
@@ -388,19 +385,11 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
       </div>
     </div>
     <div class="exp-date-filter">
-      <div class="exp-date-label">📅 Expiry Date Range Filter</div>
-      <div class="exp-date-inputs">
-        <div class="exp-date-group">
-          <label>From</label>
-          <input type="month" id="expFromMonth" onchange="applyExpF()"/>
-        </div>
-        <div class="exp-date-arrow">→</div>
-        <div class="exp-date-group">
-          <label>To</label>
-          <input type="month" id="expToMonth" onchange="applyExpF()"/>
-        </div>
-        <button class="exp-date-clear" onclick="document.getElementById('expFromMonth').value='';document.getElementById('expToMonth').value='';applyExpF()">✖ Clear</button>
-      </div>
+      <span class="exp-date-label">📅 Expiry Date Range:</span>
+      <input type="month" id="expFromMonth" onchange="applyExpF()" placeholder="From"/>
+      <span class="exp-date-arrow">→</span>
+      <input type="month" id="expToMonth" onchange="applyExpF()" placeholder="To"/>
+      <button class="exp-date-clear" onclick="document.getElementById('expFromMonth').value='';document.getElementById('expToMonth').value='';applyExpF()">✖</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:8px;align-items:center">
