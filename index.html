@@ -206,14 +206,6 @@ body.light th{background:var(--bg3)}
 body.light .grp-header td{background:var(--bg3)}
 body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)}
 
-
-.exp-date-filter{display:inline-flex;align-items:center;gap:8px;background:rgba(55,138,221,.06);border:1px solid rgba(55,138,221,.2);border-radius:8px;padding:6px 12px;margin:8px 0}
-.exp-date-label{font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.3px}
-.exp-date-filter input[type=month]{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px 8px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:130px;height:26px}
-.exp-date-filter input[type=month]:focus{border-color:var(--blue)}
-.exp-date-arrow{color:var(--text3);font-size:12px}
-.exp-date-clear{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:var(--font);transition:all .2s;height:26px}
-.exp-date-clear:hover{background:var(--red);color:#fff;border-color:var(--red)}
 </style>
 </head>
 <body>
@@ -384,13 +376,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
         </select>
       </div>
     </div>
-    <div class="exp-date-filter">
-      <span class="exp-date-label">📅 Expiry Date Range:</span>
-      <input type="month" id="expFromMonth" onchange="applyExpF()" oninput="applyExpF()" placeholder="From"/>
-      <span class="exp-date-arrow">→</span>
-      <input type="month" id="expToMonth" onchange="applyExpF()" oninput="applyExpF()" placeholder="To"/>
-      <button class="exp-date-clear" onclick="document.getElementById('expFromMonth').value='';document.getElementById('expToMonth').value='';applyExpF()">✖</button>
-    </div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:8px;align-items:center">
         <button class="toggle-all-btn" id="toggleAllBtn" onclick="toggleAllGroups()">▼ Expand All</button>
@@ -998,13 +984,6 @@ if(expStageF==='__critical_no_action'){
   if(!(r.stage==='Near Expirey'||r.stage==='Expired'))return false;
   if(ACTIONS[r.code+'_'+r.expiry])return false;
 }else if(expStageF&&r.stage!==expStageF)return false;
-// Month range filter (yyyy-mm format from input type=month)
-if(expFromMonthF||expToMonthF){
-  const _rym=(r.expiry||'').slice(0,7);
-  if(!_rym||_rym.length!==7)return false;
-  if(expFromMonthF&&_rym<expFromMonthF)return false;
-  if(expToMonthF&&_rym>expToMonthF)return false;
-}
 if(expRange==='30'&&!(r.days>=0&&r.days<=30))return false;
 if(expRange==='30_60'&&!(r.days>30&&r.days<=60))return false;
 if(expRange==='60_90'&&!(r.days>60&&r.days<=90))return false;
@@ -1664,9 +1643,24 @@ return true;
 }</script>
 
 <script>// (disabled) document.addEventListener('contextmenu', e => e.preventDefault());
-// (temporarily disabled keydown - for debugging)
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&(e.key==='I'||e.key==='C'||e.key==='J'))||(e.ctrlKey&&(e.key==='U'||e.key==='S'))){
+    e.preventDefault();return false;
+  }
+});
 
-// (temporarily disabled devtools detector - for debugging)
+(function(){
+  let devtools={open:false};
+  const threshold=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
+      if(!devtools.open){
+        devtools.open=true;
+        document.body.innerHTML='<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0a0a0f;color:#fff;font-size:24px;font-family:monospace">🔒 DevTools detected</div>';
+      }
+    }
+  },1000);
+})();
 
 
 function askDownloadPassword(){
