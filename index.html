@@ -372,7 +372,11 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
           <option value="Mid of shelf life">Mid Shelf Life</option>
           <option value="Near Expirey">Near Expiry</option>
           <option value="Expired">Expired</option>
+          <option value="__critical_no_action">🚨 Critical No Action</option>
         </select>
+        <input type="month" class="fsel" id="expFromMonth" onchange="applyExpF()" style="padding:6px 10px" title="From month"/>
+        <input type="month" class="fsel" id="expToMonth" onchange="applyExpF()" style="padding:6px 10px" title="To month"/>
+        <button class="fsel" onclick="document.getElementById('expFromMonth').value='';document.getElementById('expToMonth').value='';applyExpF()" style="cursor:pointer" title="Clear month range">✖ Clear Range</button>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
