@@ -386,9 +386,9 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     </div>
     <div class="exp-date-filter">
       <span class="exp-date-label">📅 Expiry Date Range:</span>
-      <input type="month" id="expFromMonth" onchange="applyExpF()" placeholder="From"/>
+      <input type="month" id="expFromMonth" onchange="applyExpF()" oninput="applyExpF()" placeholder="From"/>
       <span class="exp-date-arrow">→</span>
-      <input type="month" id="expToMonth" onchange="applyExpF()" placeholder="To"/>
+      <input type="month" id="expToMonth" onchange="applyExpF()" oninput="applyExpF()" placeholder="To"/>
       <button class="exp-date-clear" onclick="document.getElementById('expFromMonth').value='';document.getElementById('expToMonth').value='';applyExpF()">✖</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
