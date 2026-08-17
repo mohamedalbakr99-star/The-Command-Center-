@@ -271,7 +271,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
   </div>
   <div class="fb">
     <input class="fs" id="searchBox" placeholder="🔍  Search item or code..." oninput="applyF()"/>
-    <select class="fsel" id="brandSel" onchange="applyF()"><option value="">All Brands</option></select>
+    <input class="fs" id="brandSearchCmd" list="brandList" placeholder="🔍 Type brand..." style="width:150px" oninput="filterBrandDD(this.value)"/><datalist id="brandList"></datalist><select class="fsel" id="brandSel" onchange="applyF()"><option value="">All Brands</option></select>
     <select class="fsel" id="stockStatusSel" onchange="applyF()">
       <option value="">Available + Hold</option>
       <option value="avail">Available Only</option>
@@ -474,7 +474,7 @@ let cmdSortCol='avail_boxes', cmdSortDir=-1;
 let activeFilters={search:'',brand:'',chip:''};
 let expSortCol='days', expSortDir=1, expRange='all', expMonthFilter='';
 let expNoAction=false, expHasAction=false;
-let expBrandF='', expCatF='', expActionF='', expStageF='';
+let expBrandF='', expCatF='', expActionF='', expStageF='', expFromMonthF='', expToMonthF='';
 let brandSortCol='forecast_boxes', brandSortDir=-1, selectedBrand='';
 let allGroupsOpen=false;
 let brandChartInst, brandExpChartInst, expChartInst, stagePieInst;
@@ -668,8 +668,24 @@ const revLabels=__MR.map(r=>{const mo=parseInt((r.month||'').slice(5,7));return[
 new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr'],datasets:[{data:revs,backgroundColor:'rgba(55,138,221,.65)',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`SAR ${c.parsed.y}M`}}},scales:{x:{grid:go,ticks:{color:'#5a6280'}},y:{grid:go,ticks:{color:'#5a6280',callback:v=>v+'M'}}}}});
 }
 function initFilters(){
-const bs=document.getElementById('brandSel');BRANDS.filter(b=>b&&b!=='nan').forEach(b=>bs.appendChild(new Option(b,b)));
+const bs=document.getElementById('brandSel');
+const _allBrands=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):BRANDS.filter(b=>b&&b!=='nan').sort((a,b)=>a.localeCompare(b));
+bs.innerHTML='<option value="">All Brands</option>';
+_allBrands.forEach(b=>bs.appendChild(new Option(b,b)));
+// Also populate datalist for search
+const _dl=document.getElementById('brandList');
+if(_dl){_dl.innerHTML='';_allBrands.forEach(b=>_dl.innerHTML+='<option value="'+b+'"/>');}
 document.getElementById('chipArea').innerHTML=[{id:'need_prod',l:'⚡ Need Production',ac:'a-r'},{id:'near_exp',l:'⚠️ Near Expiry',ac:'a-a'},{id:'above_tgt',l:'📦 Stock > 120%',ac:'a-a'},{id:'no_plan',l:'🚫 No Forecast',ac:'a-b'},{id:'hold',l:'🔒 Has Hold',ac:'a-p'}].map(c=>`<button class="chip" data-id="${c.id}" data-ac="${c.ac}" onclick="toggleChip(this)">${c.l}</button>`).join('');
+}
+function filterBrandDD(txt){
+  const bs=document.getElementById('brandSel');
+  const _all=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):BRANDS.filter(b=>b&&b!=='nan').sort((a,b)=>a.localeCompare(b));
+  bs.innerHTML='<option value="">All Brands</option>';
+  const q=(txt||'').toLowerCase();
+  _all.filter(b=>!q||b.toLowerCase().includes(q)).forEach(b=>bs.appendChild(new Option(b,b)));
+  // If typed value matches a brand exactly, set filter
+  const exact=_all.find(b=>b.toLowerCase()===q);
+  if(exact){bs.value=exact;applyF();}
 }
 function toggleChip(el){const was=['a-r','a-a','a-b','a-p'].some(c=>el.classList.contains(c));document.querySelectorAll('#chipArea .chip').forEach(c=>c.className='chip');activeFilters.chip=was?'':el.dataset.id;if(!was)el.classList.add(el.dataset.ac);renderTable();updateFilterBar();}
 function setUnit(u,btn){unit=u;document.querySelectorAll('#cmdUT .ub').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
@@ -813,7 +829,8 @@ document.querySelectorAll('.range-btn').forEach((b,i)=>{b.className='range-btn'+
 renderExpChart();renderStagePie();renderExpTable();
 }
 function initExpFilters(){
-BRANDS.filter(b=>b&&b!=='nan').forEach(b=>document.getElementById('expBrand').appendChild(new Option(b,b)));
+const _allBEx=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):BRANDS.filter(b=>b&&b!=='nan').sort((a,b)=>a.localeCompare(b));
+_allBEx.forEach(b=>document.getElementById('expBrand').appendChild(new Option(b,b)));
 CATS.filter(c=>c&&c!=='nan').forEach(c=>document.getElementById('expCat').appendChild(new Option(c,c)));
 }
 function renderExpKPIs(){
@@ -965,6 +982,13 @@ if(expStageF==='__critical_no_action'){
   if(!(r.stage==='Near Expirey'||r.stage==='Expired'))return false;
   if(ACTIONS[r.code+'_'+r.expiry])return false;
 }else if(expStageF&&r.stage!==expStageF)return false;
+// Month range filter (yyyy-mm format from input type=month)
+if(expFromMonthF||expToMonthF){
+  const _rym=(r.expiry||'').slice(0,7);
+  if(!_rym)return false;
+  if(expFromMonthF&&_rym<expFromMonthF)return false;
+  if(expToMonthF&&_rym>expToMonthF)return false;
+}
 if(expRange==='30'&&!(r.days>=0&&r.days<=30))return false;
 if(expRange==='30_60'&&!(r.days>30&&r.days<=60))return false;
 if(expRange==='60_90'&&!(r.days>60&&r.days<=90))return false;
@@ -1065,8 +1089,9 @@ function setBrandChartMode(mode,btn){brandChartMode=mode;document.querySelectorA
 function initBrandPage(){
 const sel=document.getElementById('brandExpSel');
 sel.innerHTML='<option value="">— Select Brand for expiry chart —</option>';
-const _BS=window._LIVE&&window._BRAND_SUMMARY?window._BRAND_SUMMARY:BRANDS_SUMMARY;
-_BS.forEach(b=>{if(b.brand&&b.brand!=='nan')sel.appendChild(new Option(b.brand,b.brand));});
+// Get ALL brands (from items, not just brand summary which requires forecast)
+const _allBSel=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):[...new Set((window._BRAND_SUMMARY||BRANDS_SUMMARY).map(b=>b.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b));
+_allBSel.forEach(b=>sel.appendChild(new Option(b,b)));
 }
 function onBrandSelect(){selectedBrand=document.getElementById('brandExpSel').value;renderBrandExpChart();renderBrandChart();}
 function applyBrandF(){renderBrandTable();}
@@ -1098,6 +1123,9 @@ if(s&&!b.brand.toLowerCase().includes(s))return false;
 if(brandVsFc==='over'&&b.forecast_achievement_pct<=105)return false;
 if(brandVsFc==='under'&&b.forecast_achievement_pct>=95)return false;
 if(brandVsFc==='on_target'&&(b.forecast_achievement_pct<95||b.forecast_achievement_pct>105))return false;
+const _brandTrucks=document.getElementById('brandTrucksSel')?.value||'';
+if(_brandTrucks==='ge1'&&(b.trucks||0)<1)return false;
+if(_brandTrucks==='ge3'&&(b.trucks||0)<3)return false;
 return true;
 });
 brands=[...brands].sort((a,b2)=>{const av=a[brandSortCol]??0,bv2=b2[brandSortCol]??0;return(av-bv2)*brandSortDir;});
@@ -1594,6 +1622,7 @@ savedAt:new Date().toISOString()
 localStorage.setItem('zamil_snapshot',JSON.stringify(snapshot));
 console.log('💾 Snapshot saved');
 }catch(e){console.warn('Could not save snapshot:',e);}
+if(typeof initFilters==='function')initFilters();
 console.log('✅ Done!',newItems.length,'items',expRows.length,'exp rows');
 }
 function loadSnapshot(){
