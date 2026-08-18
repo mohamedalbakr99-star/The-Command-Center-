@@ -476,7 +476,7 @@ let cmdSortCol='avail_boxes', cmdSortDir=-1;
 let activeFilters={search:'',brand:'',chip:''};
 let expSortCol='days', expSortDir=1, expRange='all', expMonthFilter='';
 let expNoAction=false, expHasAction=false;
-let expBrandF='', expCatF='', expActionF='', expStageF='', expFromMonthF='', expToMonthF='';
+let expBrandF='', expCatF='', expActionF='', expStageF='';
 let brandSortCol='forecast_boxes', brandSortDir=-1, selectedBrand='';
 let allGroupsOpen=false;
 let brandChartInst, brandExpChartInst, expChartInst, stagePieInst;
@@ -1504,22 +1504,14 @@ bd.rem_forecast_boxes+=it.rem_forecast_boxes;bd.rem_forecast_pallets+=it.rem_for
 bd.trucks+=it.trucks;bd.near_boxes+=it.near;
 });
 Object.values(bMap).forEach(bd=>{
-const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes,tdb=bd.today_dispatch_boxes||0;
-const rem=Math.max(0,fc2-sold-tdb);
-bd.rem_forecast_boxes=rem;
-bd.production_gap_boxes=Math.max(0,rem-bd.avail_boxes);
-// Recalc pallets units
-const fcP=bd.forecast_pallets,soldP=bd.may_sold_pallets,tdbP=bd.today_dispatch_pallets||0;
-const remP=Math.max(0,fcP-soldP-tdbP);
-bd.rem_forecast_pallets=remP;
-bd.production_gap_pallets=Math.max(0,remP-bd.avail_pallets);
-// Recalc kg units
-const fcK=bd.forecast_kg,soldK=bd.may_sold_kg,tdbK=bd.today_dispatch_kg||0;
-const remK=Math.max(0,fcK-soldK-tdbK);
-bd.rem_forecast_kg=remK;
-bd.production_gap_kg=Math.max(0,remK-bd.avail_kg);
+const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes;
+// Keep rem_forecast as sum of items' rem (already aggregated above with MAX(0) per item)
+// Just recalculate production_gap based on that sum
+bd.production_gap_boxes=Math.max(0,bd.rem_forecast_boxes-bd.avail_boxes);
+bd.production_gap_pallets=Math.max(0,bd.rem_forecast_pallets-bd.avail_pallets);
+bd.production_gap_kg=Math.max(0,bd.rem_forecast_kg-bd.avail_kg);
 bd.forecast_achievement_pct=fc2>0?Math.round(sold/fc2*1000)/10:0;
-bd.stock_vs_tgt=rem>0?Math.round(bd.avail_boxes/rem*1000)/10:0;
+bd.stock_vs_tgt=bd.rem_forecast_boxes>0?Math.round(bd.avail_boxes/bd.rem_forecast_boxes*1000)/10:0;
 });
 const tAv=newItems.reduce((s,x)=>s+x.avail_boxes,0);
 const tHo=newItems.reduce((s,x)=>s+x.hold_boxes,0);
