@@ -540,6 +540,18 @@ function ccGet(tbl){
         if(ri>=0)cols.splice(ri,0,'today_disp');else{const ai=cols.indexOf('ach');cols.splice(ai>=0?ai+1:cols.length,0,'today_disp');}
         localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
       }
+      // Auto-add over_fc (after trucks)
+      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('over_fc')){
+        const ti=cols.indexOf('trucks');
+        if(ti>=0)cols.splice(ti+1,0,'over_fc');else cols.push('over_fc');
+        localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
+      }
+      // Auto-add fc_cov (after gap)
+      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('fc_cov')){
+        const gi=cols.indexOf('gap');
+        if(gi>=0)cols.splice(gi+1,0,'fc_cov');else cols.push('fc_cov');
+        localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
+      }
       return cols;
     }
   }catch(e){}
