@@ -736,10 +736,10 @@ if(activeFilters.chip==='hold'&&it.hold_boxes<=0)return false;
 if(activeFilters.chip==='today_disp'&&(!(it.today_dispatch_boxes>0)))return false;
 if(activeFilters.chip==='has_gap'&&(!(it.production_gap_boxes>0)))return false;
 if(activeFilters.chip==='over_fc'&&(!(it.over_forecast_boxes>0)))return false;
-if(activeFilters.chip==='cov_lt_25'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<25)))return false;
-if(activeFilters.chip==='cov_lt_50'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<50)))return false;
-if(activeFilters.chip==='cov_lt_80'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<80)))return false;
-if(activeFilters.chip==='cov_ge_80'&&(!(it.forecast_coverage_pct>=80)))return false;
+if(activeFilters.chip==='cov_lt_25'&&(!(it.rem_forecast_boxes>0&&it.forecast_coverage_pct<25)))return false;
+if(activeFilters.chip==='cov_lt_50'&&(!(it.rem_forecast_boxes>0&&it.forecast_coverage_pct<50)))return false;
+if(activeFilters.chip==='cov_lt_80'&&(!(it.rem_forecast_boxes>0&&it.forecast_coverage_pct<80)))return false;
+if(activeFilters.chip==='cov_ge_80'&&(!(it.rem_forecast_boxes>0&&it.forecast_coverage_pct>=80)))return false;
 return true;
 });
 }
@@ -814,10 +814,10 @@ dispatch:`<td style="color:var(--green);font-weight:700;${bg}">${fmtN(gv(it,'dis
 today_disp:`<td style="color:var(--amber);font-weight:700;${bg}">${gv(it,'today_disp')>0?fmtN(gv(it,'today_disp')):'-'}</td>`,
 hold:`<td style="color:var(--purple);${bg}">${gv(it,'hold')>0?fmtN(gv(it,'hold')):'-'}</td>`,
 trucks:`<td style="color:var(--blue);font-weight:700;text-align:center;${bg}">${it.trucks>0?it.trucks:'-'}</td>`,
-svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${Math.min(pct,200)/200*100}%;background:${pc}"></div></div><span class="pct-t" style="color:${pc}">${pct>0?pct+'%':'-'}</span></div></td>`,
+svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${pct<0?100:Math.min(pct,200)/200*100}%;background:${pct<0?'#a855f7':pc}"></div></div><span class="pct-t" style="color:${pct<0?'#a855f7':pc}" title="${pct<0?'No remaining forecast (stock exists without demand)':''}">${pct<0?'∞':(it.rem_forecast_boxes>0?pct+'%':'-')}</span></div></td>`,
 gap:`<td style="color:${gv(it,'gap')>0?'var(--red)':'var(--text3)'};font-weight:${gv(it,'gap')>0?700:400};text-align:center;${bg}">${gv(it,'gap')>0?fmtN(gv(it,'gap')):'-'}</td>`,
 over_fc:`<td style="color:${gv(it,'over_fc')>0?'#f59e0b':'var(--text3)'};font-weight:${gv(it,'over_fc')>0?600:400};text-align:center;${bg}">${gv(it,'over_fc')>0?fmtN(gv(it,'over_fc')):'-'}</td>`,
-fc_cov:`<td style="text-align:center;${bg}"><span style="color:${it.forecast_coverage_pct<0?'#a855f7':(it.forecast_coverage_pct>=80?'var(--green)':(it.forecast_coverage_pct>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${it.forecast_coverage_pct<0?'No remaining forecast (stock exists without demand)':''}">${it.forecast_coverage_pct<0?'∞':(it.forecast_coverage_pct>0?it.forecast_coverage_pct+'%':'-')}</span></td>`,
+fc_cov:`<td style="text-align:center;${bg}"><span style="color:${it.forecast_coverage_pct<0?'#a855f7':(it.forecast_coverage_pct>=80?'var(--green)':(it.forecast_coverage_pct>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${it.forecast_coverage_pct<0?'No remaining forecast (stock exists without demand)':''}">${it.forecast_coverage_pct<0?'∞':(it.rem_forecast_boxes>0?it.forecast_coverage_pct+'%':'-')}</span></td>`,
 expiry:`<td style="font-size:10px;color:${ec};white-space:nowrap;${bg}">${it.nearest_expiry||'-'}</td>`,
 };
 return map[c.id]||'<td>—</td>';
@@ -1190,10 +1190,10 @@ hold:`<td style="color:var(--purple);${bg}">${b.hold_boxes>0?fmtN(bv(b,'hold_box
 dispatch:`<td style="color:var(--green);font-weight:600;${bg}">${fmtN(bv(b,'dispatch_boxes'))}</td>`,
 today_disp:`<td style="color:var(--amber);font-weight:600;${bg}">${(b.today_dispatch_boxes||0)>0?fmtN(bv(b,'today_dispatch_boxes')):'-'}</td>`,
 trucks:`<td style="color:var(--blue);text-align:center;${bg}">${b.trucks>0?b.trucks:'-'}</td>`,
-svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${pct<0?100:Math.min(pct,200)/200*100}%;background:${pct<0?'#a855f7':pc}"></div></div><span class="pct-t" style="color:${pct<0?'#a855f7':pc}" title="${pct<0?'No remaining forecast (stock exists without demand)':''}">${pct<0?'∞':(pct>0?pct+'%':'-')}</span></div></td>`,
+svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${pct<0?100:Math.min(pct,200)/200*100}%;background:${pct<0?'#a855f7':pc}"></div></div><span class="pct-t" style="color:${pct<0?'#a855f7':pc}" title="${pct<0?'No remaining forecast (stock exists without demand)':''}">${pct<0?'∞':(b.rem_forecast_boxes>0?pct+'%':'-')}</span></div></td>`,
 gap:`<td style="color:${b.production_gap_boxes>0?'var(--red)':'var(--text3)'};${bg}">${b.production_gap_boxes>0?fmtN(bv(b,'production_gap_boxes')):'-'}</td>`,
 over_fc:`<td style="color:${(b.over_forecast_boxes||0)>0?'#f59e0b':'var(--text3)'};font-weight:${(b.over_forecast_boxes||0)>0?600:400};text-align:center;${bg}">${(b.over_forecast_boxes||0)>0?fmtN(bv(b,'over_forecast_boxes')):'-'}</td>`,
-fc_cov:`<td style="text-align:center;${bg}"><span style="color:${(b.forecast_coverage_pct||0)<0?'#a855f7':((b.forecast_coverage_pct||0)>=80?'var(--green)':((b.forecast_coverage_pct||0)>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${(b.forecast_coverage_pct||0)<0?'No remaining forecast (stock exists without demand)':''}">${(b.forecast_coverage_pct||0)<0?'∞':((b.forecast_coverage_pct||0)>0?b.forecast_coverage_pct+'%':'-')}</span></td>`,
+fc_cov:`<td style="text-align:center;${bg}"><span style="color:${(b.forecast_coverage_pct||0)<0?'#a855f7':((b.forecast_coverage_pct||0)>=80?'var(--green)':((b.forecast_coverage_pct||0)>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${(b.forecast_coverage_pct||0)<0?'No remaining forecast (stock exists without demand)':''}">${(b.forecast_coverage_pct||0)<0?'∞':(b.rem_forecast_boxes>0?(b.forecast_coverage_pct||0)+'%':'-')}</span></td>`,
 near:`<td style="color:${b.near_boxes>0?'var(--near)':'var(--text3)'};${bg}">${b.near_boxes>0?fmtN(b.near_boxes)+' Bx':'-'}</td>`,
 };
 return map[c.id]||'<td>—</td>';
@@ -1532,7 +1532,7 @@ hold_boxes:0,hold_pallets:0,hold_kg:0,forecast_boxes:0,forecast_pallets:0,foreca
 may_sold_boxes:0,may_sold_pallets:0,may_sold_kg:0,
 rem_forecast_boxes:0,rem_forecast_pallets:0,rem_forecast_kg:0,
 dispatch_boxes:0,dispatch_pallets:0,dispatch_kg:0,
-production_gap_boxes:0,trucks:0,near_boxes:0,item_codes:[]};
+production_gap_boxes:0,production_gap_pallets:0,production_gap_kg:0,trucks:0,near_boxes:0,item_codes:[]};
 const bd=bMap[b];bd.items++;bd.item_codes.push(it.code);
 ['avail','hold','forecast','dispatch','production_gap'].forEach(k=>{
 bd[k+'_boxes']+=it[k+'_boxes'];bd[k+'_pallets']+=it[k+'_pallets'];bd[k+'_kg']+=it[k+'_kg']||0;
