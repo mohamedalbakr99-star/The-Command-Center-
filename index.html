@@ -491,11 +491,13 @@ cmd:[
 {id:'today_disp', label:"Today's Dispatch"},
 {id:'rem_fc',   label:'Rem. Forecast'},
 {id:'avail',    label:'Stock Available'},
-{id:'dispatch',   label:'Ready to Ship from FC'},
-{id:'hold',       label:'Hold'},
+{id:'dispatch',   label:'Ready to Dispatch'},
 {id:'trucks',   label:'Trucks'},
-{id:'svt',      label:'Stock vs Rem%'},
+{id:'over_fc',  label:'Over Forecast'},
 {id:'gap',      label:'Prod. Gap'},
+{id:'fc_cov',   label:'Forecast Coverage %'},
+{id:'svt',      label:'Stock vs Rem%'},
+{id:'hold',     label:'Hold'},
 {id:'expiry',   label:'Nearest Expiry'},
 ],
 exp:[
@@ -520,8 +522,10 @@ brand:[
 {id:'hold',     label:'Hold'},
 {id:'dispatch', label:'Ready to Dispatch'},
 {id:'trucks',   label:'Trucks'},
-{id:'svt',      label:'vs Rem%'},
+{id:'over_fc',  label:'Over Forecast'},
 {id:'gap',      label:'Prod. Gap'},
+{id:'fc_cov',   label:'Forecast Coverage %'},
+{id:'svt',      label:'Stock vs Rem%'},
 {id:'near',     label:'Near Expiry (Boxes)'},
 ],
 };
@@ -677,7 +681,7 @@ _allBrands.forEach(b=>bs.appendChild(new Option(b,b)));
 // Also populate datalist for search
 const _dl=document.getElementById('brandList');
 if(_dl){_dl.innerHTML='';_allBrands.forEach(b=>_dl.innerHTML+='<option value="'+b+'"/>');}
-document.getElementById('chipArea').innerHTML=[{id:'need_prod',l:'⚡ Need Production',ac:'a-r'},{id:'near_exp',l:'⚠️ Near Expiry',ac:'a-a'},{id:'above_tgt',l:'📦 Stock > 120%',ac:'a-a'},{id:'no_plan',l:'🚫 No Forecast',ac:'a-b'},{id:'hold',l:'🔒 Has Hold',ac:'a-p'}].map(c=>`<button class="chip" data-id="${c.id}" data-ac="${c.ac}" onclick="toggleChip(this)">${c.l}</button>`).join('');
+document.getElementById('chipArea').innerHTML=[{id:'need_prod',l:'⚡ Need Production',ac:'a-r'},{id:'has_gap',l:'📉 Has Gap',ac:'a-r'},{id:'today_disp',l:'🚚 Dispatched Today',ac:'a-a'},{id:'over_fc',l:'📈 Over Forecast',ac:'a-a'},{id:'cov_lt_25',l:'🔴 Coverage <25%',ac:'a-r'},{id:'cov_lt_50',l:'🟠 Coverage <50%',ac:'a-a'},{id:'cov_lt_80',l:'🟡 Coverage <80%',ac:'a-a'},{id:'cov_ge_80',l:'🟢 Coverage ≥80%',ac:'a-b'},{id:'near_exp',l:'⚠️ Near Expiry',ac:'a-a'},{id:'above_tgt',l:'📦 Stock > 120%',ac:'a-a'},{id:'no_plan',l:'🚫 No Forecast',ac:'a-b'},{id:'hold',l:'🔒 Has Hold',ac:'a-p'}].map(c=>`<button class="chip" data-id="${c.id}" data-ac="${c.ac}" onclick="toggleChip(this)">${c.l}</button>`).join('');
 }
 function filterBrandDD(txt){
   const bs=document.getElementById('brandSel');
@@ -719,6 +723,11 @@ if(activeFilters.chip==='no_plan'&&it.forecast_boxes>0)return false;
 if(activeFilters.chip==='hold'&&it.hold_boxes<=0)return false;
 if(activeFilters.chip==='today_disp'&&(!(it.today_dispatch_boxes>0)))return false;
 if(activeFilters.chip==='has_gap'&&(!(it.production_gap_boxes>0)))return false;
+if(activeFilters.chip==='over_fc'&&(!(it.over_forecast_boxes>0)))return false;
+if(activeFilters.chip==='cov_lt_25'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<25)))return false;
+if(activeFilters.chip==='cov_lt_50'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<50)))return false;
+if(activeFilters.chip==='cov_lt_80'&&(!(it.forecast_coverage_pct>=0&&it.forecast_coverage_pct<80)))return false;
+if(activeFilters.chip==='cov_ge_80'&&(!(it.forecast_coverage_pct>=80)))return false;
 return true;
 });
 }
@@ -748,17 +757,19 @@ const COLS=[
 {id:'rem_fc',   label:`Rem. Forecast (${u})`,        sk:'rem_forecast_boxes',        tip:'rem'},
 {id:'avail',    label:`Stock Avail. (${u})`,         sk:'avail_boxes',               tip:'avail'},
 {id:'dispatch',   label:`Ready to Dispatch (${u})`,   sk:'dispatch_boxes',            tip:'dispatch'},
-{id:'hold',     label:`Hold (${u})`,                 sk:'hold_boxes',                tip:'hold'},
 {id:'trucks',   label:'🚛 Trucks',                   sk:'trucks',                    tip:'trucks'},
-{id:'svt',      label:'vs Rem%',                     sk:'stock_vs_tgt',              tip:'svt'},
+{id:'over_fc',  label:`Over Forecast (${u})`,        sk:'over_forecast_boxes',       tip:'over_fc'},
 {id:'gap',      label:`Prod. Gap (${u})`,            sk:'production_gap_boxes',      tip:'gap'},
+{id:'fc_cov',   label:'Forecast Coverage %',         sk:'forecast_coverage_pct',     tip:'fc_cov'},
+{id:'svt',      label:'Stock vs Rem%',               sk:'stock_vs_tgt',              tip:'svt'},
+{id:'hold',     label:`Hold (${u})`,                 sk:'hold_boxes',                tip:'hold'},
 {id:'expiry',   label:'Nearest Exp.',                sk:'nearest_expiry',            tip:'expiry'},
 ];
 const visCols=COLS.filter(c=>vis.includes(c.id));
 function gv(it,id){
-if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',today_disp:'today_dispatch_pallets',gap:'production_gap_pallets'};return it[m[id]]??0;}
-if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',today_disp:'today_dispatch_kg',gap:'production_gap_kg'};return it[m[id]]??0;}
-const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',today_disp:'today_dispatch_boxes',gap:'production_gap_boxes'};
+if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',today_disp:'today_dispatch_pallets',gap:'production_gap_pallets',over_fc:'over_forecast_pallets'};return it[m[id]]??0;}
+if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',today_disp:'today_dispatch_kg',gap:'production_gap_kg',over_fc:'over_forecast_kg'};return it[m[id]]??0;}
+const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',today_disp:'today_dispatch_boxes',gap:'production_gap_boxes',over_fc:'over_forecast_boxes'};
 return it[m[id]]??0;
 }
 const thHtml=visCols.map(c=>{
@@ -770,7 +781,7 @@ document.getElementById('tHead').innerHTML=`<tr><th class="th-tip${cmdSortCol===
 let items=getFiltered();
 if(cmdSortCol)items=[...items].sort((a,b)=>{const av=a[cmdSortCol]??'',bv=b[cmdSortCol]??'';return(typeof av==='number'?av-bv:String(av).localeCompare(String(bv)))*cmdSortDir;});
 const tot={};visCols.forEach(c=>{tot[c.id]=0;});
-items.forEach(it=>{visCols.forEach(c=>{if(['forecast','sold','rem_fc','avail','hold','dispatch','today_disp','gap'].includes(c.id))tot[c.id]+=gv(it,c.id);if(c.id==='trucks')tot[c.id]+=it.trucks;});});
+items.forEach(it=>{visCols.forEach(c=>{if(['forecast','sold','rem_fc','avail','hold','dispatch','today_disp','gap','over_fc'].includes(c.id))tot[c.id]+=gv(it,c.id);if(c.id==='trucks')tot[c.id]+=it.trucks;});});
 if(!items.length){document.getElementById('tBody').innerHTML=`<tr><td colspan="${visCols.length+1}" class="no-data">No items match filters</td></tr>`;document.getElementById('tFoot').textContent='No items';return;}
 function buildCell(c,it){
 const isSorted=cmdSortCol===c.sk;
@@ -793,12 +804,14 @@ hold:`<td style="color:var(--purple);${bg}">${gv(it,'hold')>0?fmtN(gv(it,'hold')
 trucks:`<td style="color:var(--blue);font-weight:700;text-align:center;${bg}">${it.trucks>0?it.trucks:'-'}</td>`,
 svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${Math.min(pct,200)/200*100}%;background:${pc}"></div></div><span class="pct-t" style="color:${pc}">${pct>0?pct+'%':'-'}</span></div></td>`,
 gap:`<td style="color:${gv(it,'gap')>0?'var(--red)':'var(--text3)'};font-weight:${gv(it,'gap')>0?700:400};text-align:center;${bg}">${gv(it,'gap')>0?fmtN(gv(it,'gap')):'-'}</td>`,
+over_fc:`<td style="color:${gv(it,'over_fc')>0?'#f59e0b':'var(--text3)'};font-weight:${gv(it,'over_fc')>0?600:400};text-align:center;${bg}">${gv(it,'over_fc')>0?fmtN(gv(it,'over_fc')):'-'}</td>`,
+fc_cov:`<td style="text-align:center;${bg}"><span style="color:${it.forecast_coverage_pct<0?'#a855f7':(it.forecast_coverage_pct>=80?'var(--green)':(it.forecast_coverage_pct>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${it.forecast_coverage_pct<0?'No remaining forecast (stock exists without demand)':''}">${it.forecast_coverage_pct<0?'∞':(it.forecast_coverage_pct>0?it.forecast_coverage_pct+'%':'-')}</span></td>`,
 expiry:`<td style="font-size:10px;color:${ec};white-space:nowrap;${bg}">${it.nearest_expiry||'-'}</td>`,
 };
 return map[c.id]||'<td>—</td>';
 }
 function totCell(c){
-const map={brand:'',forecast:`<td>${fmtN(tot.forecast)}</td>`,sold:`<td style="color:var(--blue)">${fmtN(tot.sold)}</td>`,ach:'<td>—</td>',rem_fc:`<td style="color:var(--amber)">${fmtN(tot.rem_fc)}</td>`,avail:`<td>${fmtN(tot.avail)}</td>`,dispatch:`<td style="color:var(--green)">${fmtN(tot.dispatch)}</td>`,today_disp:`<td style="color:var(--amber)">${tot.today_disp>0?fmtN(tot.today_disp):'-'}</td>`,hold:`<td>${fmtN(tot.hold)}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${fmtN(tot.trucks)}</td>`,svt:'<td>—</td>',gap:`<td style="text-align:center">${fmtN(tot.gap)}</td>`,expiry:'<td>—</td>'};
+const map={brand:'',forecast:`<td>${fmtN(tot.forecast)}</td>`,sold:`<td style="color:var(--blue)">${fmtN(tot.sold)}</td>`,ach:'<td>—</td>',rem_fc:`<td style="color:var(--amber)">${fmtN(tot.rem_fc)}</td>`,avail:`<td>${fmtN(tot.avail)}</td>`,dispatch:`<td style="color:var(--green)">${fmtN(tot.dispatch)}</td>`,over_fc:`<td style="color:#f59e0b;text-align:center">${tot.over_fc>0?fmtN(tot.over_fc):'-'}</td>`,fc_cov:'<td>—</td>',today_disp:`<td style="color:var(--amber)">${tot.today_disp>0?fmtN(tot.today_disp):'-'}</td>`,hold:`<td>${fmtN(tot.hold)}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${fmtN(tot.trucks)}</td>`,svt:'<td>—</td>',gap:`<td style="text-align:center">${fmtN(tot.gap)}</td>`,expiry:'<td>—</td>'};
 return map[c.id]||'<td>—</td>';
 }
 document.getElementById('tBody').innerHTML=items.map(it=>{
@@ -1105,8 +1118,10 @@ const BCOLS=[
 {id:'hold',     label:'Hold('+u+')',       sk:'hold_boxes'},
 {id:'dispatch', label:'Ready to Dispatch('+u+')',   sk:'dispatch_boxes'},
 {id:'trucks',   label:'🚛 Trucks',          sk:'trucks'},
-{id:'svt',      label:'vs Rem%',           sk:'stock_vs_tgt'},
+{id:'over_fc',  label:'Over Forecast('+u+')', sk:'over_forecast_boxes'},
 {id:'gap',      label:'Gap('+u+')',        sk:'production_gap_boxes'},
+{id:'fc_cov',   label:'Forecast Coverage %', sk:'forecast_coverage_pct'},
+{id:'svt',      label:'Stock vs Rem%',     sk:'stock_vs_tgt'},
 {id:'near',     label:'Near Exp.(Boxes)', sk:'near_boxes'},
 ];
 const visCols=BCOLS.filter(c=>vis.includes(c.id));
@@ -1128,14 +1143,17 @@ function bv(b,sk){
 if(brandUnit==='pallets'){
 const m={forecast_boxes:'forecast_pallets',may_sold_boxes:'may_sold_pallets',rem_forecast_boxes:'rem_forecast_pallets',
 avail_boxes:'avail_pallets',hold_boxes:'hold_pallets',dispatch_boxes:'dispatch_pallets',
-production_gap_boxes:'production_gap_pallets',near_boxes:'near_boxes'};
+production_gap_boxes:'production_gap_pallets',near_boxes:'near_boxes',
+today_dispatch_boxes:'today_dispatch_pallets',
+over_forecast_boxes:'over_forecast_pallets'};
 return b[m[sk]]??b[sk]??0;
 }
 if(brandUnit==='kg'){
 const m={forecast_boxes:'forecast_kg',may_sold_boxes:'may_sold_kg',rem_forecast_boxes:'rem_forecast_kg',
 avail_boxes:'avail_kg',hold_boxes:'hold_kg',dispatch_boxes:'dispatch_kg',
 production_gap_boxes:'production_gap_kg',near_boxes:'near_boxes',
-today_dispatch_boxes:'today_dispatch_kg'};
+today_dispatch_boxes:'today_dispatch_kg',
+over_forecast_boxes:'over_forecast_kg'};
 return b[m[sk]]??b[sk]??0;
 }
 return b[sk]??0;
@@ -1160,8 +1178,10 @@ hold:`<td style="color:var(--purple);${bg}">${b.hold_boxes>0?fmtN(bv(b,'hold_box
 dispatch:`<td style="color:var(--green);font-weight:600;${bg}">${fmtN(bv(b,'dispatch_boxes'))}</td>`,
 today_disp:`<td style="color:var(--amber);font-weight:600;${bg}">${(b.today_dispatch_boxes||0)>0?fmtN(bv(b,'today_dispatch_boxes')):'-'}</td>`,
 trucks:`<td style="color:var(--blue);text-align:center;${bg}">${b.trucks>0?b.trucks:'-'}</td>`,
-svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${Math.min(pct,200)/200*100}%;background:${pc}"></div></div><span class="pct-t" style="color:${pc}">${pct>0?pct+'%':'-'}</span></div></td>`,
+svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" style="width:${pct<0?100:Math.min(pct,200)/200*100}%;background:${pct<0?'#a855f7':pc}"></div></div><span class="pct-t" style="color:${pct<0?'#a855f7':pc}" title="${pct<0?'No remaining forecast (stock exists without demand)':''}">${pct<0?'∞':(pct>0?pct+'%':'-')}</span></div></td>`,
 gap:`<td style="color:${b.production_gap_boxes>0?'var(--red)':'var(--text3)'};${bg}">${b.production_gap_boxes>0?fmtN(bv(b,'production_gap_boxes')):'-'}</td>`,
+over_fc:`<td style="color:${(b.over_forecast_boxes||0)>0?'#f59e0b':'var(--text3)'};font-weight:${(b.over_forecast_boxes||0)>0?600:400};text-align:center;${bg}">${(b.over_forecast_boxes||0)>0?fmtN(bv(b,'over_forecast_boxes')):'-'}</td>`,
+fc_cov:`<td style="text-align:center;${bg}"><span style="color:${(b.forecast_coverage_pct||0)<0?'#a855f7':((b.forecast_coverage_pct||0)>=80?'var(--green)':((b.forecast_coverage_pct||0)>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${(b.forecast_coverage_pct||0)<0?'No remaining forecast (stock exists without demand)':''}">${(b.forecast_coverage_pct||0)<0?'∞':((b.forecast_coverage_pct||0)>0?b.forecast_coverage_pct+'%':'-')}</span></td>`,
 near:`<td style="color:${b.near_boxes>0?'var(--near)':'var(--text3)'};${bg}">${b.near_boxes>0?fmtN(b.near_boxes)+' Bx':'-'}</td>`,
 };
 return map[c.id]||'<td>—</td>';
@@ -1223,9 +1243,9 @@ brandExpChartInst=new Chart(document.getElementById('chartBrandExp'),{type:'bar'
 }
 function exportTableExcel(){
 const items=getFiltered(),u=unit==='boxes'?'Boxes':unit==='pallets'?'Pallets':'KG';
-function gv2(it,id){if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',today_disp:'today_dispatch_pallets',gap:'production_gap_pallets'};return it[m[id]]??0;}if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',today_disp:'today_dispatch_kg',gap:'production_gap_kg'};return it[m[id]]??0;}const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',today_disp:'today_dispatch_boxes',gap:'production_gap_boxes'};return it[m[id]]??0;}
-const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Shipped('+u+')','Ach%',"Today's Dispatch("+u+")",'Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Ready to Dispatch('+u+')','Trucks','vs Rem%','Gap('+u+')','Nearest Expiry'];
-const rows=items.map(it=>[it.code,it.desc,it.brand,it.category,gv2(it,'forecast'),gv2(it,'sold'),it.forecast_achievement_pct,gv2(it,'today_disp'),gv2(it,'rem_fc'),gv2(it,'avail'),gv2(it,'hold'),gv2(it,'dispatch'),it.trucks,it.stock_vs_tgt,gv2(it,'gap'),it.nearest_expiry]);
+function gv2(it,id){if(unit==='pallets'){const m={forecast:'forecast_pallets',sold:'may_sold_pallets',rem_fc:'rem_forecast_pallets',avail:'avail_pallets',hold:'hold_pallets',dispatch:'dispatch_pallets',today_disp:'today_dispatch_pallets',gap:'production_gap_pallets',over_fc:'over_forecast_pallets'};return it[m[id]]??0;}if(unit==='kg'){const m={forecast:'forecast_kg',sold:'may_sold_kg_total',rem_fc:'rem_forecast_kg',avail:'avail_kg',hold:'hold_kg',dispatch:'dispatch_kg',today_disp:'today_dispatch_kg',gap:'production_gap_kg',over_fc:'over_forecast_kg'};return it[m[id]]??0;}const m={forecast:'forecast_boxes',sold:'may_sold_boxes',rem_fc:'rem_forecast_boxes',avail:'avail_boxes',hold:'hold_boxes',dispatch:'dispatch_boxes',today_disp:'today_dispatch_boxes',gap:'production_gap_boxes',over_fc:'over_forecast_boxes'};return it[m[id]]??0;}
+const hdrs=['Code','Description','Brand','Category','Forecast('+u+')','Shipped('+u+')','Ach%',"Today's Dispatch("+u+")",'Rem.FC('+u+')','Avail.('+u+')','Hold('+u+')','Ready to Dispatch('+u+')','Trucks','Over Forecast('+u+')','Gap('+u+')','Forecast Coverage %','Stock vs Rem%','Nearest Expiry'];
+const rows=items.map(it=>[it.code,it.desc,it.brand,it.category,gv2(it,'forecast'),gv2(it,'sold'),it.forecast_achievement_pct,gv2(it,'today_disp'),gv2(it,'rem_fc'),gv2(it,'avail'),gv2(it,'hold'),gv2(it,'dispatch'),it.trucks,gv2(it,'over_fc'),gv2(it,'gap'),it.forecast_coverage_pct<0?'∞':it.forecast_coverage_pct,it.stock_vs_tgt<0?'∞':it.stock_vs_tgt,it.nearest_expiry]);
 dlCSV([hdrs,...rows],'zamil_items_'+today()+'.csv');
 }
 function exportExpExcel(){
@@ -1238,8 +1258,8 @@ dlCSV([hdrs,...data],'zamil_expiry_'+today()+'.csv');
 function exportBrandExcel(){
 const _BSE=window._LIVE&&window._BRAND_SUMMARY?window._BRAND_SUMMARY:BRANDS_SUMMARY;
 const brands=_BSE.filter(b=>b.brand&&b.brand!=='nan');
-const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%',"Today's Dispatch(Bx)",'Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Ready to Dispatch(Bx)','Trucks','vs Rem%','Gap(Bx)','Near Exp(Bx)'];
-const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.today_dispatch_boxes||0,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.stock_vs_tgt,b.production_gap_boxes,b.near_boxes]);
+const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%',"Today's Dispatch(Bx)",'Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Ready to Dispatch(Bx)','Trucks','Over Forecast(Bx)','Gap(Bx)','Forecast Coverage %','Stock vs Rem%','Near Exp(Bx)'];
+const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.today_dispatch_boxes||0,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.over_forecast_boxes||0,b.production_gap_boxes,(b.forecast_coverage_pct||0)<0?'∞':(b.forecast_coverage_pct||0),b.stock_vs_tgt<0?'∞':b.stock_vs_tgt,b.near_boxes]);
 dlCSV([hdrs,...data],'zamil_brands_'+today()+'.csv');
 }
 function dlCSV(rows,filename){const csv=rows.map(r=>r.map(v=>typeof v==='string'&&(v.includes(',')||v.includes('"'))?`"${v.replace(/"/g,'""')}"`:v??'').join(',')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
@@ -1459,7 +1479,12 @@ const disp=Math.min(av,remFc);
 const gap=Math.max(0,remFc-av);
 const dispP=ps>0?Math.round(disp/ps*100)/100:0;
 const trucks=dispP>0?Math.round(dispP/26*10)/10:0;
-const svt=remFc>0?Math.round(av/remFc*1000)/10:0;
+// Stock vs Rem % (∞ if rem=0 && av>0)
+const svt=remFc>0?Math.round(av/remFc*1000)/10:(av>0?-1:0);
+// Forecast Coverage % (Ready to Dispatch / Rem Forecast)
+const fcCov=remFc>0?Math.round(disp/remFc*1000)/10:(av>0?-1:0);
+// Over Forecast = MAX(0, Available - Rem Forecast)
+const overFc=Math.max(0,av-remFc);
 const ne=nearExp[code];
 newItems.push({
 code,desc:info.desc,brand:info.brand,category:info.category,
@@ -1474,6 +1499,10 @@ trucks,stock_vs_tgt:svt,forecast_achievement_pct:fcv>0?Math.round(soldBx/fcv*100
 today_dispatch_boxes:Math.round(todayDisp*10)/10,
 today_dispatch_pallets:ps>0?Math.round(todayDisp/ps*100)/100:0,
 today_dispatch_kg:Math.round(todayDisp*ck*10)/10,
+forecast_coverage_pct:fcCov,
+over_forecast_boxes:Math.round(overFc*10)/10,
+over_forecast_pallets:ps>0?Math.round(overFc/ps*100)/100:0,
+over_forecast_kg:Math.round(overFc*ck*10)/10,
 fresh:st.Fresh,mid:st['Mid of shelf life'],near:st['Near Expirey'],expired:st.Expired,
 fresh_pct:av>0?Math.round(st.Fresh/av*1000)/10:0,mid_pct:av>0?Math.round(st['Mid of shelf life']/av*1000)/10:0,
 near_pct:av>0?Math.round(st['Near Expirey']/av*1000)/10:0,exp_pct:av>0?Math.round(st.Expired/av*1000)/10:0,
@@ -1499,19 +1528,22 @@ bd[k+'_boxes']+=it[k+'_boxes'];bd[k+'_pallets']+=it[k+'_pallets'];bd[k+'_kg']+=i
 bd.today_dispatch_boxes=(bd.today_dispatch_boxes||0)+(it.today_dispatch_boxes||0);
 bd.today_dispatch_pallets=(bd.today_dispatch_pallets||0)+(it.today_dispatch_pallets||0);
 bd.today_dispatch_kg=(bd.today_dispatch_kg||0)+(it.today_dispatch_kg||0);
+bd.over_forecast_boxes=(bd.over_forecast_boxes||0)+(it.over_forecast_boxes||0);
+bd.over_forecast_pallets=(bd.over_forecast_pallets||0)+(it.over_forecast_pallets||0);
+bd.over_forecast_kg=(bd.over_forecast_kg||0)+(it.over_forecast_kg||0);
 bd.may_sold_boxes+=it.may_sold_boxes;bd.may_sold_pallets+=it.may_sold_pallets;bd.may_sold_kg+=it.may_sold_kg_total;
 bd.rem_forecast_boxes+=it.rem_forecast_boxes;bd.rem_forecast_pallets+=it.rem_forecast_pallets;bd.rem_forecast_kg+=it.rem_forecast_kg;
 bd.trucks+=it.trucks;bd.near_boxes+=it.near;
 });
 Object.values(bMap).forEach(bd=>{
 const fc2=bd.forecast_boxes,sold=bd.may_sold_boxes;
-// Keep rem_forecast as sum of items' rem (already aggregated above with MAX(0) per item)
-// Just recalculate production_gap based on that sum
-bd.production_gap_boxes=Math.max(0,bd.rem_forecast_boxes-bd.avail_boxes);
-bd.production_gap_pallets=Math.max(0,bd.rem_forecast_pallets-bd.avail_pallets);
-bd.production_gap_kg=Math.max(0,bd.rem_forecast_kg-bd.avail_kg);
+// Production Gap for brand = SUM of items' gap (already aggregated in loop above)
+// So we keep the aggregated production_gap_boxes/pallets/kg values as-is
+// Forecast Coverage = SUM(Ready to Dispatch) / SUM(Rem Forecast)
+bd.forecast_coverage_pct=bd.rem_forecast_boxes>0?Math.round(bd.dispatch_boxes/bd.rem_forecast_boxes*1000)/10:(bd.avail_boxes>0?-1:0);
 bd.forecast_achievement_pct=fc2>0?Math.round(sold/fc2*1000)/10:0;
-bd.stock_vs_tgt=bd.rem_forecast_boxes>0?Math.round(bd.avail_boxes/bd.rem_forecast_boxes*1000)/10:0;
+// Stock vs Rem % - if rem=0 & avail>0 → -1 (∞ indicator)
+bd.stock_vs_tgt=bd.rem_forecast_boxes>0?Math.round(bd.avail_boxes/bd.rem_forecast_boxes*1000)/10:(bd.avail_boxes>0?-1:0);
 });
 const tAv=newItems.reduce((s,x)=>s+x.avail_boxes,0);
 const tHo=newItems.reduce((s,x)=>s+x.hold_boxes,0);
