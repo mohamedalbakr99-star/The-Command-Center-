@@ -1300,7 +1300,7 @@ function fmt(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigit
 function fmtN(n){if(!n&&n!==0)return'0';return Number(n).toLocaleString('en-US',{maximumFractionDigits:1});}
 function fmtK(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString();}
 function expC(d){const days=(new Date(d)-TODAY)/864e5;return days<30?'var(--red)':days<90?'var(--near)':days<180?'var(--amber)':'var(--text3)';}
-const API_URL='https://script.google.com/macros/s/AKfycbyD_IuyK-ZIv4JeFeQIKUyrx3HdfgHyPxG4q-tQAW8bw0b4ZxydlTkG7hO6BzmS4aDoCw/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbwU5U3QgmsNh1LEVzp0SYpIBMSHuRSZmtLd4j-JAcHLHjHbAY2onionHHS6zuNpX0QdFA/exec';
 function parseTSV(text,sep){
 sep=sep||'\t';
 const lines=text.trim().split('\n');
