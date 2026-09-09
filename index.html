@@ -294,6 +294,9 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <span style="font-size:11px;color:var(--text3)" id="tFoot">—</span>
     <div class="tbl-right">
       <button class="export-btn" onclick="exportTableExcel()">⬇️ Export CSV</button>
+      <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Download Expiry</button>
+      <button class="export-btn" onclick="toggleAllExpRows(true)" style="background:rgba(29,185,122,.12);color:var(--green)">▼ Expand All</button>
+      <button class="export-btn" onclick="toggleAllExpRows(false)" style="background:rgba(255,80,80,.12);color:var(--red)">▲ Collapse All</button>
       <div class="cc-wrap">
         <button class="cc-btn" onclick="ccOpen('cmd')">⚙️ Columns</button>
         <div class="cc-panel" id="cc-cmd"><h4>Show / Hide Columns</h4><div id="cc-cmd-rows"></div><button class="cc-reset" onclick="ccReset('cmd')">↺ Reset</button></div>
@@ -693,7 +696,7 @@ _allBrands.forEach(b=>bs.appendChild(new Option(b,b)));
 // Also populate datalist for search
 const _dl=document.getElementById('brandList');
 if(_dl){_dl.innerHTML='';_allBrands.forEach(b=>_dl.innerHTML+='<option value="'+b+'"/>');}
-document.getElementById('chipArea').innerHTML=[{id:'need_prod',l:'⚡ Need Production',ac:'a-r'},{id:'has_gap',l:'📉 Has Gap',ac:'a-r'},{id:'today_disp',l:'🚚 Dispatched Today',ac:'a-a'},{id:'over_fc',l:'📈 Over Forecast',ac:'a-a'},{id:'cov_lt_25',l:'🔴 Coverage <25%',ac:'a-r'},{id:'cov_lt_50',l:'🟠 Coverage <50%',ac:'a-a'},{id:'cov_lt_80',l:'🟡 Coverage <80%',ac:'a-a'},{id:'cov_ge_80',l:'🟢 Coverage ≥80%',ac:'a-b'},{id:'near_exp',l:'⚠️ Near Expiry',ac:'a-a'},{id:'above_tgt',l:'📦 Stock > 120%',ac:'a-a'},{id:'no_plan',l:'🚫 No Forecast',ac:'a-b'},{id:'hold',l:'🔒 Has Hold',ac:'a-p'}].map(c=>`<button class="chip" data-id="${c.id}" data-ac="${c.ac}" onclick="toggleChip(this)">${c.l}</button>`).join('');
+document.getElementById('chipArea').innerHTML=[{id:'need_prod',l:'⚡ Need Production',ac:'a-r'},{id:'has_gap',l:'📉 Has Gap',ac:'a-r'},{id:'today_disp',l:'🚚 Dispatched Today',ac:'a-a'},{id:'over_fc',l:'📈 Stocks Over Forecast',ac:'a-a'},{id:'cov_lt_25',l:'🔴 Coverage <25%',ac:'a-r'},{id:'cov_lt_50',l:'🟠 Coverage <50%',ac:'a-a'},{id:'cov_lt_80',l:'🟡 Coverage <80%',ac:'a-a'},{id:'cov_ge_80',l:'🟢 Coverage ≥80%',ac:'a-b'},{id:'near_exp',l:'⚠️ Near Expiry',ac:'a-a'},{id:'above_tgt',l:'📦 Stock > 120%',ac:'a-a'},{id:'no_plan',l:'🚫 No Forecast',ac:'a-b'},{id:'hold',l:'🔒 Has Hold',ac:'a-p'}].map(c=>`<button class="chip" data-id="${c.id}" data-ac="${c.ac}" onclick="toggleChip(this)">${c.l}</button>`).join('');
 }
 function filterBrandDD(txt){
   const bs=document.getElementById('brandSel');
@@ -704,6 +707,37 @@ function filterBrandDD(txt){
   // If typed value matches a brand exactly, set filter
   const exact=_all.find(b=>b.toLowerCase()===q);
   if(exact){bs.value=exact;applyF();}
+}
+// Toggle single item expiry rows
+function toggleItemExp(el){
+  const code=el.dataset.code;
+  const rows=document.querySelectorAll('.item-exp-row[data-parent="'+code+'"]');
+  const isOpen=el.textContent==='▼';
+  rows.forEach(r=>r.style.display=isOpen?'none':'table-row');
+  el.textContent=isOpen?'▶':'▼';
+}
+// Toggle all item expiry rows
+function toggleAllExpRows(open){
+  document.querySelectorAll('.item-exp-row').forEach(r=>r.style.display=open?'table-row':'none');
+  document.querySelectorAll('.exp-arrow').forEach(a=>a.textContent=open?'▼':'▶');
+}
+// Download expiry data for filtered items
+function downloadFilteredExpiry(){
+  const __EXP=window._LIVE?window._EXP:_ER;
+  if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
+  // Get filtered item codes from table
+  const rows=document.querySelectorAll('#tBody tr:not(.item-exp-row):not(.total-row)');
+  const codes=new Set();
+  rows.forEach(r=>{
+    const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
+    if(codeSpan)codes.add(codeSpan.textContent.trim());
+  });
+  // Filter expiry rows
+  const filtered=__EXP.filter(e=>codes.has(e.code));
+  if(!filtered.length){alert('No expiry data for filtered items');return;}
+  const hdrs=['Code','Description','Brand','Category','Expiry Date','Production Date','Stage','Status','Boxes','Days Remaining'];
+  const data=filtered.map(e=>[e.code,e.desc,e.brand,e.cat,e.expiry,e.prod_date,e.stage,e.action,e.boxes,e.days]);
+  dlCSV([hdrs,...data],'zamil_expiry_filtered_'+today()+'.csv');
 }
 function toggleChip(el){const was=['a-r','a-a','a-b','a-p'].some(c=>el.classList.contains(c));document.querySelectorAll('#chipArea .chip').forEach(c=>c.className='chip');activeFilters.chip=was?'':el.dataset.id;if(!was)el.classList.add(el.dataset.ac);renderTable();updateFilterBar();}
 function setUnit(u,btn){unit=u;document.querySelectorAll('#cmdUT .ub').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
@@ -826,9 +860,15 @@ function totCell(c){
 const map={brand:'',forecast:`<td>${fmtN(tot.forecast)}</td>`,sold:`<td style="color:var(--blue)">${fmtN(tot.sold)}</td>`,ach:'<td>—</td>',rem_fc:`<td style="color:var(--amber)">${fmtN(tot.rem_fc)}</td>`,avail:`<td>${fmtN(tot.avail)}</td>`,dispatch:`<td style="color:var(--green)">${fmtN(tot.dispatch)}</td>`,over_fc:`<td style="color:#f59e0b;text-align:center">${tot.over_fc>0?fmtN(tot.over_fc):'-'}</td>`,fc_cov:'<td>—</td>',today_disp:`<td style="color:var(--amber)">${tot.today_disp>0?fmtN(tot.today_disp):'-'}</td>`,hold:`<td>${fmtN(tot.hold)}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${fmtN(tot.trucks)}</td>`,svt:'<td>—</td>',gap:`<td style="text-align:center">${fmtN(tot.gap)}</td>`,expiry:'<td>—</td>'};
 return map[c.id]||'<td>—</td>';
 }
+// Build expiry sub-rows for each item
+const __EXP=window._LIVE?window._EXP:_ER;
 document.getElementById('tBody').innerHTML=items.map(it=>{
 const pct=it.stock_vs_tgt,rc=pct>150?'danger':pct>120?'warn':'';
-return `<tr class="${rc}"><td style="max-width:180px"><span style="color:var(--text);font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.desc}">${it.desc}</span><span style="font-size:9.5px;color:var(--text3)">${it.code}</span></td>${visCols.map(c=>buildCell(c,it)).join('')}</tr>`;
+const itemExp=(__EXP||[]).filter(e=>e.code===it.code);
+const hasExp=itemExp.length>0;
+const arrow=hasExp?`<span class="exp-arrow" data-code="${it.code}" onclick="toggleItemExp(this)" style="cursor:pointer;margin-right:4px;font-size:10px;color:var(--text3)">▶</span>`:'';
+const expRows=hasExp?itemExp.map(e=>`<tr class="item-exp-row" data-parent="${it.code}" style="display:none;background:rgba(55,138,221,.04)"><td style="padding-left:28px;font-size:10px" colspan="${visCols.length+1}">📅 Exp: <b>${e.expiry||'-'}</b> | Prod: ${e.prod_date||'-'} | Stage: <span style="color:${e.stage==='Expired'?'var(--red)':(e.stage==='Near Expirey'?'var(--amber)':'var(--green)')}">${e.stage}</span> | Boxes: <b>${e.boxes}</b> | Status: ${e.action} ${ACTIONS[e.code+'_'+e.expiry]?'| Action: '+ACTIONS[e.code+'_'+e.expiry]:''}</td></tr>`).join(''):'';
+return `<tr class="${rc}"><td style="max-width:180px">${arrow}<span style="color:var(--text);font-weight:600;display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.desc}">${it.desc}</span><br/><span style="font-size:9.5px;color:var(--text3)">${it.code}</span></td>${visCols.map(c=>buildCell(c,it)).join('')}</tr>${expRows}`;
 }).join('')+`<tr class="total-row"><td colspan="2">TOTAL — ${items.length} items</td>${visCols.filter(c=>c.id!=='brand').map(c=>totCell(c)).join('')}</tr>`;
 const __ITC=window._LIVE?window._ITEMS:ITEMS;
 document.getElementById('tFoot').textContent=`${items.length} of ${__ITC.length} items`;
