@@ -291,12 +291,12 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
   </div>
   <div class="active-filters-bar" id="activeFiltersBar"></div>
   <div class="tbl-toolbar">
+    <button class="export-btn" id="expToggleBtn" onclick="toggleAllExpBtn()" style="background:rgba(55,138,221,.12);color:var(--blue);font-size:11px;padding:4px 10px">▼ Expand All</button>
     <span style="font-size:11px;color:var(--text3)" id="tFoot">—</span>
     <div class="tbl-right">
       <button class="export-btn" onclick="exportTableExcel()">⬇️ Export CSV</button>
       <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Download Expiry</button>
-      <button class="export-btn" onclick="toggleAllExpRows(true)" style="background:rgba(29,185,122,.12);color:var(--green)">▼ Expand All</button>
-      <button class="export-btn" onclick="toggleAllExpRows(false)" style="background:rgba(255,80,80,.12);color:var(--red)">▲ Collapse All</button>
+      
       <div class="cc-wrap">
         <button class="cc-btn" onclick="ccOpen('cmd')">⚙️ Columns</button>
         <div class="cc-panel" id="cc-cmd"><h4>Show / Hide Columns</h4><div id="cc-cmd-rows"></div><button class="cc-reset" onclick="ccReset('cmd')">↺ Reset</button></div>
@@ -721,6 +721,12 @@ function toggleAllExpRows(open){
   document.querySelectorAll('.item-exp-row').forEach(r=>r.style.display=open?'table-row':'none');
   document.querySelectorAll('.exp-arrow').forEach(a=>a.textContent=open?'▼':'▶');
 }
+function toggleAllExpBtn(){
+  const btn=document.getElementById('expToggleBtn');
+  const isOpen=btn.textContent.includes('Expand');
+  toggleAllExpRows(isOpen);
+  btn.textContent=isOpen?'▲ Collapse All':'▼ Expand All';
+}
 // Download expiry data for filtered items
 function downloadFilteredExpiry(){
   const __EXP=window._LIVE?window._EXP:_ER;
@@ -864,11 +870,28 @@ return map[c.id]||'<td>—</td>';
 const __EXP=window._LIVE?window._EXP:_ER;
 document.getElementById('tBody').innerHTML=items.map(it=>{
 const pct=it.stock_vs_tgt,rc=pct>150?'danger':pct>120?'warn':'';
-const itemExp=(__EXP||[]).filter(e=>e.code===it.code);
+const itemExp=(__EXP||[]).filter(e=>e.code===it.code&&e.action==='Available');
 const hasExp=itemExp.length>0;
 const arrow=hasExp?`<span class="exp-arrow" data-code="${it.code}" onclick="toggleItemExp(this)" style="cursor:pointer;margin-right:4px;font-size:10px;color:var(--text3)">▶</span>`:'';
-const expRows=hasExp?itemExp.map(e=>`<tr class="item-exp-row" data-parent="${it.code}" style="display:none;background:rgba(55,138,221,.04)"><td style="padding-left:28px;font-size:10px" colspan="${visCols.length+1}">📅 Exp: <b>${e.expiry||'-'}</b> | Prod: ${e.prod_date||'-'} | Stage: <span style="color:${e.stage==='Expired'?'var(--red)':(e.stage==='Near Expirey'?'var(--amber)':'var(--green)')}">${e.stage}</span> | Boxes: <b>${e.boxes}</b> | Status: ${e.action} ${ACTIONS[e.code+'_'+e.expiry]?'| Action: '+ACTIONS[e.code+'_'+e.expiry]:''}</td></tr>`).join(''):'';
-return `<tr class="${rc}"><td style="max-width:180px">${arrow}<span style="color:var(--text);font-weight:600;display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.desc}">${it.desc}</span><br/><span style="font-size:9.5px;color:var(--text3)">${it.code}</span></td>${visCols.map(c=>buildCell(c,it)).join('')}</tr>${expRows}`;
+// Group by month
+const expByMonth={};
+itemExp.forEach(e=>{
+  const m=(e.expiry||'').slice(0,7);
+  if(!m)return;
+  if(!expByMonth[m])expByMonth[m]={boxes:0,count:0,stage:e.stage};
+  expByMonth[m].boxes+=e.boxes;
+  expByMonth[m].count++;
+  // Keep worst stage
+  const stOrder={'Expired':0,'Near Expirey':1,'Mid of shelf life':2,'Fresh':3};
+  if((stOrder[e.stage]||3)<(stOrder[expByMonth[m].stage]||3))expByMonth[m].stage=e.stage;
+});
+const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const expRows=hasExp?Object.entries(expByMonth).sort().map(([m,d])=>{
+  const mn=parseInt(m.slice(5,7));const yr=m.slice(0,4);
+  const stColor=d.stage==='Expired'?'var(--red)':(d.stage==='Near Expirey'?'var(--amber)':'var(--green)');
+  return `<tr class="item-exp-row" data-parent="${it.code}" style="display:none;background:rgba(55,138,221,.04)"><td style="padding-left:28px;font-size:10px" colspan="${visCols.length+1}">📅 <b>${mNames[mn]} ${yr}</b> &nbsp;&nbsp;&nbsp; Boxes: <b>${d.boxes}</b> (${d.count} batch${d.count>1?'es':''}) &nbsp;&nbsp;&nbsp; Stage: <span style="color:${stColor};font-weight:600">${d.stage}</span></td></tr>`;
+}).join(''):'';
+return `<tr class="${rc}"><td style="max-width:180px">${arrow}<span style="color:var(--text);font-weight:600;display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px" title="${it.desc}">${it.desc.length>22?it.desc.slice(0,22)+'…':it.desc}</span><br/><span style="font-size:9.5px;color:var(--text3)">${it.code}</span></td>${visCols.map(c=>buildCell(c,it)).join('')}</tr>${expRows}`;
 }).join('')+`<tr class="total-row"><td colspan="2">TOTAL — ${items.length} items</td>${visCols.filter(c=>c.id!=='brand').map(c=>totCell(c)).join('')}</tr>`;
 const __ITC=window._LIVE?window._ITEMS:ITEMS;
 document.getElementById('tFoot').textContent=`${items.length} of ${__ITC.length} items`;
@@ -1535,7 +1558,7 @@ const disp=Math.min(av,remFc);
 // Production Gap = Rem Forecast - Available
 const gap=Math.max(0,remFc-av);
 const dispP=ps>0?Math.round(disp/ps*100)/100:0;
-const trucks=dispP>0?Math.round(dispP/26*10)/10:0;
+const trucks=dispP>0?Math.round(dispP/24*10)/10:0;
 // Stock vs Rem % (∞ if rem=0 && av>0)
 const svt=remFc>0?Math.round(av/remFc*1000)/10:(av>0?-1:0);
 // Forecast Coverage % (Ready to Dispatch / Rem Forecast)
