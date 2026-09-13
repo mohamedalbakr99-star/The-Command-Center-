@@ -296,6 +296,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <div class="tbl-right">
       <button class="export-btn" onclick="exportTableExcel()">⬇️ Export CSV</button>
       <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Download Expiry</button>
+      <button class="export-btn" onclick="saveEmergencyBackup()" style="background:rgba(255,165,0,.15);color:#e67e00;font-weight:600">📦 Save Backup</button>
       
       <div class="cc-wrap">
         <button class="cc-btn" onclick="ccOpen('cmd')">⚙️ Columns</button>
@@ -744,6 +745,42 @@ function downloadFilteredExpiry(){
   const hdrs=['Code','Description','Brand','Category','Expiry Date','Production Date','Stage','Status','Boxes','Days Remaining'];
   const data=filtered.map(e=>[e.code,e.desc,e.brand,e.cat,e.expiry,e.prod_date,e.stage,e.action,e.boxes,e.days]);
   dlCSV([hdrs,...data],'zamil_expiry_filtered_'+today()+'.csv');
+}
+// Save Emergency Backup - embeds current live data into HTML for offline use
+function saveEmergencyBackup(){
+  if(!window._LIVE||!window._ITEMS||!window._ITEMS.length){
+    alert('⚠️ No live data loaded yet. Wait for data to load first.');
+    return;
+  }
+  try{
+    // Get current page HTML
+    var html=document.documentElement.outerHTML;
+    // Embed current data into empty arrays
+    var itemsJSON=JSON.stringify(window._ITEMS);
+    var expJSON=JSON.stringify(window._EXP||[]);
+    var brandsJSON=JSON.stringify(window._BRAND_SUMMARY||[]);
+    var dayRevJSON=JSON.stringify(window._DAY_REV||{});
+    var monthRevJSON=JSON.stringify(window._MONTHLY_REV||[]);
+    // Replace empty arrays with live data
+    html=html.replace(/const ITEMS\s*=\s*\[\]/,'const ITEMS       = '+itemsJSON);
+    html=html.replace(/const _ER\s*=\s*\[\]/,'const _ER         = '+expJSON);
+    html=html.replace(/const BRANDS_SUMMARY\s*=\s*\[\]/,'const BRANDS_SUMMARY = '+brandsJSON);
+    html=html.replace(/const DAILY_MAY\s*=\s*\[\]/,'const DAILY_MAY   = [{day_rev:'+JSON.stringify(window._DAY_REV||{})+'}]');
+    html=html.replace(/const MONTHLY_REV\s*=\s*\[\]/,'const MONTHLY_REV = '+monthRevJSON);
+    // Update BRANDS list
+    var allBrands=[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort();
+    html=html.replace(/const BRANDS\s*=\s*\[[^\]]*\]/,'const BRANDS      = '+JSON.stringify(allBrands));
+    // Download
+    var blob=new Blob(['<!DOCTYPE html><html>'+html.slice(html.indexOf('<head'))],{type:'text/html'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='index.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    alert('✅ Backup saved! Upload this file to GitHub in case of emergency.');
+  }catch(e){
+    alert('❌ Error: '+e.message);
+  }
 }
 function toggleChip(el){const was=['a-r','a-a','a-b','a-p'].some(c=>el.classList.contains(c));document.querySelectorAll('#chipArea .chip').forEach(c=>c.className='chip');activeFilters.chip=was?'':el.dataset.id;if(!was)el.classList.add(el.dataset.ac);renderTable();updateFilterBar();}
 function setUnit(u,btn){unit=u;document.querySelectorAll('#cmdUT .ub').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
