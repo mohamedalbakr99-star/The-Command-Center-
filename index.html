@@ -217,6 +217,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <div class="dt" id="hdrDate"></div>
   </div>
   <button class="upload-btn" id="refreshBtn" onclick="refreshFromSheets()" style="border-color:var(--green);color:var(--green)">🔄 Refresh</button>
+  <button class="upload-btn" onclick="askBackupPassword()" style="border-color:var(--amber,orange);color:var(--amber,orange)">📦 Backup</button>
   <button class="upload-btn" onclick="askDownloadPassword()" style="border-color:var(--blue);color:var(--blue)">⬇️ Download</button>
   <button class="upload-btn" id="modeBtn" onclick="toggleMode()" title="Toggle Light/Dark mode">🌙 Dark</button>
   <div class="logo-area">
@@ -296,7 +297,6 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <div class="tbl-right">
       <button class="export-btn" onclick="exportTableExcel()">⬇️ Export CSV</button>
       <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Download Expiry</button>
-      <button class="export-btn" onclick="saveEmergencyBackup()" style="background:rgba(255,165,0,.15);color:#e67e00;font-weight:600">📦 Save Backup</button>
       
       <div class="cc-wrap">
         <button class="cc-btn" onclick="ccOpen('cmd')">⚙️ Columns</button>
@@ -747,6 +747,15 @@ function downloadFilteredExpiry(){
   dlCSV([hdrs,...data],'zamil_expiry_filtered_'+today()+'.csv');
 }
 // Save Emergency Backup - embeds current live data into HTML for offline use
+function askBackupPassword(){
+  const pw=prompt('🔒 Enter backup password:');
+  if(!pw)return;
+  if(btoa(pw)==='Tm91cmluJk5lbGx5MzY5'){
+    saveEmergencyBackup();
+  }else{
+    alert('❌ Wrong password');
+  }
+}
 function saveEmergencyBackup(){
   if(!window._LIVE||!window._ITEMS||!window._ITEMS.length){
     alert('⚠️ No live data loaded yet. Wait for data to load first.');
