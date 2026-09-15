@@ -1577,10 +1577,10 @@ function ccGet(tbl){
         if(ri>=0)cols.splice(ri,0,'today_disp');else{const ai=cols.indexOf('ach');cols.splice(ai>=0?ai+1:cols.length,0,'today_disp');}
         localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
       }
-      // Auto-add stor_plt for brand
-      if(tbl==='brand'&&!cols.includes('stor_plt')){
-        cols.push('stor_plt');
-        localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
+      // Auto-add stor_plt for brand (always ensure it's there)
+      if(tbl==='brand'){
+        if(!cols.includes('stor_plt')){cols.push('stor_plt');localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));}
+        if(!cols.includes('near')){const gi=cols.indexOf('svt');cols.splice(gi>=0?gi+1:cols.length,0,'near');localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));}
       }
       // Auto-add over_fc (after trucks)
       if((tbl==='cmd'||tbl==='brand')&&!cols.includes('over_fc')){
@@ -2289,7 +2289,7 @@ const BCOLS=[
 {id:'gap',      label:'Gap('+u+')',        sk:'production_gap_boxes'},
 {id:'fc_cov',   label:'Forecast Coverage %', sk:'forecast_coverage_pct'},
 {id:'svt',      label:'Stock vs Rem%',     sk:'stock_vs_tgt'},
-{id:'near',     label:'Near Exp.(Boxes)', sk:'near_boxes'},
+{id:'near',     label:'Near Exp.('+u+')', sk:'near_boxes'},
 {id:'stor_plt', label:'Storage Pallets',   sk:'storage_pallets'},
 ];
 const visCols=BCOLS.filter(c=>vis.includes(c.id));
@@ -2350,14 +2350,14 @@ svt:`<td style="${bg}"><div class="pg-c"><div class="pg-b"><div class="pg-f" sty
 gap:`<td style="color:${b.production_gap_boxes>0?'var(--red)':'var(--text3)'};${bg}">${b.production_gap_boxes>0?fmtN(bv(b,'production_gap_boxes')):'-'}</td>`,
 over_fc:`<td style="color:${(b.over_forecast_boxes||0)>0?'#f59e0b':'var(--text3)'};font-weight:${(b.over_forecast_boxes||0)>0?600:400};text-align:center;${bg}">${(b.over_forecast_boxes||0)>0?fmtN(bv(b,'over_forecast_boxes')):'-'}</td>`,
 fc_cov:`<td style="text-align:center;${bg}"><span style="color:${(b.forecast_coverage_pct||0)<0?'#a855f7':((b.forecast_coverage_pct||0)>=80?'var(--green)':((b.forecast_coverage_pct||0)>=50?'var(--amber)':'var(--red)'))};font-weight:600" title="${(b.forecast_coverage_pct||0)<0?'No remaining forecast (stock exists without demand)':''}">${(b.forecast_coverage_pct||0)<0?'∞':(b.rem_forecast_boxes>0?(b.forecast_coverage_pct||0)+'%':'-')}</span></td>`,
-near:`<td style="color:${b.near_boxes>0?'var(--near)':'var(--text3)'};${bg}">${b.near_boxes>0?fmtN(b.near_boxes)+' Bx':'-'}</td>`,
+near:`<td style="color:${b.near_boxes>0?'var(--near)':'var(--text3)'};${bg}">${b.near_boxes>0?fmtN(b.near_boxes):'-'}</td>`,
 stor_plt:`<td style="color:var(--blue);font-weight:600;text-align:center;${bg}">${(b.storage_pallets||0)>0?fmtN(Math.round((b.storage_pallets||0)*10)/10)+' Plt':'-'}</td>`,
 };
 return map[c.id]||'<td>—</td>';
 }
 function totCell(c){
 const v=fmtN(tot[c.sk]||0);
-const map={items:`<td>${tot[c.sk]||0}</td>`,forecast:`<td>${v}</td>`,sold:`<td style="color:var(--blue)">${v}</td>`,ach:'<td>—</td>',today_disp:`<td style="color:var(--amber)">${(tot[c.sk]||0)>0?v:'-'}</td>`,rem_fc:`<td style="color:var(--amber)">${v}</td>`,avail:`<td>${v}</td>`,hold:`<td>${v}</td>`,dispatch:`<td style="color:var(--green)">${v}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${v}</td>`,over_fc:`<td style="color:#f59e0b;text-align:center">${(tot[c.sk]||0)>0?v:'-'}</td>`,gap:`<td>${v}</td>`,fc_cov:'<td>—</td>',svt:'<td>—</td>',near:`<td style="color:var(--near)">${v} Bx</td>`,stor_plt:`<td style="color:var(--blue);text-align:center">${(tot[c.sk]||0)>0?fmtN(Math.round((tot[c.sk]||0)*10)/10)+' Plt':'-'}</td>`};
+const map={items:`<td>${tot[c.sk]||0}</td>`,forecast:`<td>${v}</td>`,sold:`<td style="color:var(--blue)">${v}</td>`,ach:'<td>—</td>',today_disp:`<td style="color:var(--amber)">${(tot[c.sk]||0)>0?v:'-'}</td>`,rem_fc:`<td style="color:var(--amber)">${v}</td>`,avail:`<td>${v}</td>`,hold:`<td>${v}</td>`,dispatch:`<td style="color:var(--green)">${v}</td>`,trucks:`<td style="color:var(--blue);text-align:center">${v}</td>`,over_fc:`<td style="color:#f59e0b;text-align:center">${(tot[c.sk]||0)>0?v:'-'}</td>`,gap:`<td>${v}</td>`,fc_cov:'<td>—</td>',svt:'<td>—</td>',near:`<td style="color:var(--near)">${v}</td>`,stor_plt:`<td style="color:var(--blue);text-align:center">${(tot[c.sk]||0)>0?fmtN(Math.round((tot[c.sk]||0)*10)/10)+' Plt':'-'}</td>`};
 return map[c.id]||'<td>—</td>';
 }
 const rows=brands.map(b=>`<tr style="cursor:pointer" onclick="selectBrand('${b.brand}')"><td style="color:var(--text);font-weight:600">${b.brand}</td>${visCols.map(c=>cell(c,b)).join('')}</tr>`).join('');
