@@ -269,7 +269,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <div class="chart-card">
       <div class="ct">Monthly Revenue</div>
       <div class="cs" id="revSub">Avg: SAR 39.15M/month</div>
-      <div class="cw"><canvas id="chartRev" style="box-sizing: border-box; display: block; height: 200px; width: 772px;" width="772" height="200"></canvas></div>
+      <div class="cw" style="max-height:220px"><canvas id="chartRev" style="box-sizing: border-box; display: block; height: 200px; width: 772px;" width="772" height="200"></canvas></div>
     </div>
   </div>
   <div class="fb">
@@ -1571,28 +1571,17 @@ function ccGet(tbl){
     const s=localStorage.getItem('zcc_'+tbl);
     if(s){
       let cols=JSON.parse(s);
-      // Auto-add today_disp if missing (new column)
-      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('today_disp')){
-        const ri=cols.indexOf('rem_fc');
-        if(ri>=0)cols.splice(ri,0,'today_disp');else{const ai=cols.indexOf('ach');cols.splice(ai>=0?ai+1:cols.length,0,'today_disp');}
+      // One-time migration: add new columns only if not migrated yet
+      const migKey='zcc_mig_v3_'+tbl;
+      if(!localStorage.getItem(migKey)){
+        const newCols=['today_disp','over_fc','fc_cov'];
+        newCols.forEach(nc=>{if(!cols.includes(nc)){
+          if(nc==='today_disp'){const ri=cols.indexOf('rem_fc');if(ri>=0)cols.splice(ri,0,nc);else cols.push(nc);}
+          else if(nc==='over_fc'){const ti=cols.indexOf('trucks');if(ti>=0)cols.splice(ti+1,0,nc);else cols.push(nc);}
+          else if(nc==='fc_cov'){const gi=cols.indexOf('gap');if(gi>=0)cols.splice(gi+1,0,nc);else cols.push(nc);}
+        }});
         localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
-      }
-      // Auto-add stor_plt for brand (always ensure it's there)
-      if(tbl==='brand'){
-        if(!cols.includes('stor_plt')){cols.push('stor_plt');localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));}
-        if(!cols.includes('near')){const gi=cols.indexOf('svt');cols.splice(gi>=0?gi+1:cols.length,0,'near');localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));}
-      }
-      // Auto-add over_fc (after trucks)
-      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('over_fc')){
-        const ti=cols.indexOf('trucks');
-        if(ti>=0)cols.splice(ti+1,0,'over_fc');else cols.push('over_fc');
-        localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
-      }
-      // Auto-add fc_cov (after gap)
-      if((tbl==='cmd'||tbl==='brand')&&!cols.includes('fc_cov')){
-        const gi=cols.indexOf('gap');
-        if(gi>=0)cols.splice(gi+1,0,'fc_cov');else cols.push('fc_cov');
-        localStorage.setItem('zcc_'+tbl,JSON.stringify(cols));
+        localStorage.setItem(migKey,'1');
       }
       return cols;
     }
@@ -1733,7 +1722,18 @@ const revs=__MR.map(r=>+(r.revenue/1e6).toFixed(2));
 const avg=revs.reduce((a,b)=>a+b,0)/revs.length;
 document.getElementById('revSub').textContent='Avg: SAR '+fmtK(avg*1e6)+'/month';
 const revLabels=__MR.map(r=>{const mo=parseInt((r.month||'').slice(5,7));return['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo]||r.month;});
-new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr'],datasets:[{data:revs,backgroundColor:'rgba(55,138,221,.65)',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`SAR ${c.parsed.y}M`}}},scales:{x:{grid:go,ticks:{color:'#5a6280'}},y:{grid:go,ticks:{color:'#5a6280',callback:v=>v+'M'}}}}});
+// Monthly Revenue chart - gradient colors per month
+const revColors=revs.map((v,i)=>{
+  const colors=['#3b82f6','#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#06b6d4','#3b82f6','#6366f1'];
+  return colors[i%12];
+});
+new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:revs,backgroundColor:revColors,borderRadius:6,borderSkipped:false,maxBarThickness:45}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'SAR '+c.parsed.y+'M'}},
+// Data labels on top
+datalabels:{display:false}},scales:{x:{grid:go,ticks:{color:'#5a6280',font:{size:11}}},y:{grid:go,ticks:{color:'#5a6280',font:{size:10},callback:v=>v+'M'}}},
+// Custom plugin for labels on bars
+animation:{onComplete:function(){const ctx=this.ctx;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+this.data.datasets[0].data.forEach((v,i)=>{if(v>0){const meta=this.getDatasetMeta(0).data[i];ctx.fillStyle='#9aa0b8';ctx.fillText(v+'M',meta.x,meta.y-4);}});
+}}}});
 }
 function initFilters(){
 const bs=document.getElementById('brandSel');
