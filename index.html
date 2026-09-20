@@ -2525,7 +2525,7 @@ const fc={};
 fcData.forEach(r=>{
 const code=(r['Item Code']||'').trim();if(!code)return;
 const v=toN(r['Sales Forcast Boxes']||r[' Sales Forcast Boxes ']||0);
-if(v>0)fc[code]=v;
+if(v>0)fc[code]=(fc[code]||0)+v;
 });
 const avail={},hold={},stages={},nearExp={},expRows=[];
 stockData.filter(r=>(r['Category']||r['Category ']||'').trim()==='Finished Good').forEach(r=>{
