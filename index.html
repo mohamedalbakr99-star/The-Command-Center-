@@ -269,7 +269,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
     <div class="chart-card">
       <div class="ct">Monthly Revenue</div>
       <div class="cs" id="revSub">Avg: SAR 39.15M/month</div>
-      <div class="cw" style="max-height:220px"><canvas id="chartRev" style="box-sizing: border-box; display: block; height: 200px; width: 772px;" width="772" height="200"></canvas></div>
+      <div class="cw" style="max-height:180px;max-width:100%"><canvas id="chartRev" style="box-sizing: border-box; display: block; height: 200px; width: 772px;" width="772" height="200"></canvas></div>
     </div>
   </div>
   <div class="fb">
@@ -1722,17 +1722,21 @@ const revs=__MR.map(r=>+(r.revenue/1e6).toFixed(2));
 const avg=revs.reduce((a,b)=>a+b,0)/revs.length;
 document.getElementById('revSub').textContent='Avg: SAR '+fmtK(avg*1e6)+'/month';
 const revLabels=__MR.map(r=>{const mo=parseInt((r.month||'').slice(5,7));return['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo]||r.month;});
-// Monthly Revenue chart - gradient colors per month
-const revColors=revs.map((v,i)=>{
-  const colors=['#3b82f6','#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#06b6d4','#3b82f6','#6366f1'];
-  return colors[i%12];
+// Monthly Revenue chart - color by value (green=high, orange=low)
+const revMax=Math.max(...revs.filter(v=>v>0),1);
+const revMin=Math.min(...revs.filter(v=>v>0),0);
+const revColors=revs.map(v=>{
+  if(v<=0)return'rgba(100,100,100,.4)';
+  const ratio=(v-revMin)/(revMax-revMin||1);
+  // orange(low) → green(high)
+  const r=Math.round(245-ratio*200);
+  const g=Math.round(120+ratio*77);
+  const b=Math.round(50+ratio*22);
+  return 'rgba('+r+','+g+','+b+',.8)';
 });
-new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:revs,backgroundColor:revColors,borderRadius:6,borderSkipped:false,maxBarThickness:45}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'SAR '+c.parsed.y+'M'}},
-// Data labels on top
-datalabels:{display:false}},scales:{x:{grid:go,ticks:{color:'#5a6280',font:{size:11}}},y:{grid:go,ticks:{color:'#5a6280',font:{size:10},callback:v=>v+'M'}}},
-// Custom plugin for labels on bars
-animation:{onComplete:function(){const ctx=this.ctx;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
-this.data.datasets[0].data.forEach((v,i)=>{if(v>0){const meta=this.getDatasetMeta(0).data[i];ctx.fillStyle='#9aa0b8';ctx.fillText(v+'M',meta.x,meta.y-4);}});
+new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:revs,backgroundColor:revColors,borderRadius:4,borderSkipped:false,maxBarThickness:35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'SAR '+c.parsed.y+'M'}}},scales:{x:{grid:go,ticks:{color:'#5a6280',font:{size:10}}},y:{grid:go,beginAtZero:true,ticks:{color:'#5a6280',font:{size:9},callback:v=>v+'M'}}},
+animation:{onComplete:function(){const ctx=this.ctx;ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+this.data.datasets[0].data.forEach((v,i)=>{if(v>0){const meta=this.getDatasetMeta(0).data[i];ctx.fillStyle='#9aa0b8';ctx.fillText(Math.round(v)+'M',meta.x,meta.y-3);}});
 }}}});
 }
 function initFilters(){
