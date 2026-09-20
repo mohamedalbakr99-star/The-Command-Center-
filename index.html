@@ -1722,21 +1722,26 @@ const revs=__MR.map(r=>+(r.revenue/1e6).toFixed(2));
 const avg=revs.reduce((a,b)=>a+b,0)/revs.length;
 document.getElementById('revSub').textContent='Avg: SAR '+fmtK(avg*1e6)+'/month';
 const revLabels=__MR.map(r=>{const mo=parseInt((r.month||'').slice(5,7));return['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo]||r.month;});
-// Monthly Revenue chart - color by value (green=high, orange=low)
+// Monthly Revenue chart - color by value (orange=low → green=high)
 const revMax=Math.max(...revs.filter(v=>v>0),1);
 const revMin=Math.min(...revs.filter(v=>v>0),0);
 const revColors=revs.map(v=>{
   if(v<=0)return'rgba(100,100,100,.4)';
   const ratio=(v-revMin)/(revMax-revMin||1);
-  // orange(low) → green(high)
-  const r=Math.round(245-ratio*200);
-  const g=Math.round(120+ratio*77);
-  const b=Math.round(50+ratio*22);
-  return 'rgba('+r+','+g+','+b+',.8)';
+  // Strong gradient: orange #f97316 (low) → yellow #eab308 (mid) → green #22c55e (high)
+  let r,g,b;
+  if(ratio<0.5){
+    const t=ratio*2;
+    r=Math.round(249-249*t+234*t);g=Math.round(115-115*t+179*t);b=Math.round(22-22*t+8*t);
+  }else{
+    const t=(ratio-0.5)*2;
+    r=Math.round(234-234*t+34*t);g=Math.round(179-179*t+197*t);b=Math.round(8-8*t+94*t);
+  }
+  return 'rgba('+r+','+g+','+b+',.85)';
 });
 new Chart(document.getElementById('chartRev'),{type:'bar',data:{labels:revLabels.length?revLabels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:revs,backgroundColor:revColors,borderRadius:4,borderSkipped:false,maxBarThickness:35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'SAR '+c.parsed.y+'M'}}},scales:{x:{grid:go,ticks:{color:'#5a6280',font:{size:10}}},y:{grid:go,beginAtZero:true,ticks:{color:'#5a6280',font:{size:9},callback:v=>v+'M'}}},
 animation:{onComplete:function(){const ctx=this.ctx;ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
-this.data.datasets[0].data.forEach((v,i)=>{if(v>0){const meta=this.getDatasetMeta(0).data[i];ctx.fillStyle='#9aa0b8';ctx.fillText(Math.round(v)+'M',meta.x,meta.y-3);}});
+this.data.datasets[0].data.forEach((v,i)=>{if(v>0){const meta=this.getDatasetMeta(0).data[i];ctx.fillStyle='#9aa0b8';ctx.fillText(v+'M',meta.x,meta.y-3);}});
 }}}});
 }
 function initFilters(){
