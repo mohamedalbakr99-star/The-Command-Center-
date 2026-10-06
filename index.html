@@ -268,6 +268,18 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
   /* Charts container */
   .cw{max-height:200px!important}
 }
+
+@media(max-width:768px){
+  /* Brand charts stack vertically */
+  .brand-charts{grid-template-columns:1fr!important}
+  
+  /* Brand filters stack */
+  .brand-filters{flex-direction:column!important;gap:6px!important}
+  .brand-filters .fs,.brand-filters .fsel{width:100%!important;max-width:100%!important}
+  
+  /* Brand search full width */
+  #brandSearch{max-width:100%!important;width:100%!important}
+}
 </style>
 </head>
 <body>
@@ -2359,7 +2371,12 @@ sel.innerHTML='<option value="">— Select Brand for expiry chart —</option>';
 const _allBSel=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):[...new Set((window._BRAND_SUMMARY||BRANDS_SUMMARY).map(b=>b.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b));
 _allBSel.forEach(b=>sel.appendChild(new Option(b,b)));
 }
-function onBrandSelect(){selectedBrand=document.getElementById('brandExpSel').value;renderBrandExpChart();renderBrandChart();}
+function onBrandSelect(){
+  selectedBrand=document.getElementById('brandExpSel').value;
+  // Also filter the table by the selected brand
+  document.getElementById('brandSearch').value=selectedBrand||'';
+  renderBrandTable();renderBrandExpChart();renderBrandChart();
+}
 function applyBrandF(){renderBrandTable();}
 function renderBrandTable(){
 const s=document.getElementById('brandSearch').value.toLowerCase();
