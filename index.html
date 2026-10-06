@@ -1915,13 +1915,13 @@ function saveEmergencyBackup(){
 }
 
 // Mobile column control
-const _isMobile=window.innerWidth<=768;
+// Check mobile dynamically every time
 const _mobileItemCols=['brand','forecast','sold','ach','rem_fc','avail','gap'];
 const _mobileExpCols=['exp_dt','stage','qty','act_col'];
 const _mobileBrandCols=['items','forecast','sold','ach','avail','rem_fc','over_fc'];
 
 function getMobileCols(tbl){
-  if(!_isMobile)return null;
+  if(window.innerWidth>768)return null;
   if(tbl==='cmd')return _mobileItemCols;
   if(tbl==='exp')return _mobileExpCols;
   if(tbl==='brand')return _mobileBrandCols;
