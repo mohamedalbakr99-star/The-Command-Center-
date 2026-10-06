@@ -204,6 +204,70 @@ body.light th{background:var(--bg3)}
 body.light .grp-header td{background:var(--bg3)}
 body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)}
 
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+@media(max-width:768px){
+  /* Charts stack vertically */
+  .charts-row,.chart-row{display:flex!important;flex-direction:column!important;gap:12px!important}
+  .chart-card{width:100%!important;min-width:0!important}
+  
+  /* KPI cards wrap */
+  .kpi-row{flex-wrap:wrap!important;gap:8px!important}
+  .kpi-card{min-width:45%!important;flex:1 1 45%!important}
+  
+  /* Filter bar stack */
+  .fb{flex-direction:column!important;gap:6px!important}
+  .fb .fsel,.fb .fs{width:100%!important;min-width:0!important}
+  
+  /* Hide non-essential chips on mobile */
+  .chip[data-id="has_gap"],
+  .chip[data-id="over_fc"]{display:inline-flex!important}
+  .chip[data-id="cov_lt_25"],
+  .chip[data-id="cov_lt_50"],
+  .chip[data-id="cov_lt_80"],
+  .chip[data-id="cov_ge_80"],
+  .chip[data-id="near_exp"],
+  .chip[data-id="above_tgt"],
+  .chip[data-id="no_plan"],
+  .chip[data-id="hold"]{display:none!important}
+  
+  /* Table font smaller */
+  .tbl td,.tbl th{font-size:10px!important;padding:4px 6px!important}
+  .tbl{font-size:10px!important}
+  
+  /* Toolbar wrap */
+  .tbl-toolbar{flex-wrap:wrap!important;gap:6px!important}
+  .tbl-right{flex-wrap:wrap!important;gap:4px!important}
+  
+  /* Header compact */
+  .header{flex-wrap:wrap!important;gap:8px!important;padding:10px!important}
+  .title{font-size:18px!important}
+  .sub{font-size:10px!important}
+  
+  /* Tabs */
+  .tabs{overflow-x:auto!important;flex-wrap:nowrap!important}
+  .tab{font-size:11px!important;padding:8px 12px!important;white-space:nowrap!important}
+  
+  /* Expiry filter bar */
+  .exp-filter-bar{flex-direction:column!important}
+  .exp-filter-bar>div{flex-wrap:wrap!important;gap:6px!important}
+  .exp-filter-bar .fsel{width:48%!important;min-width:0!important}
+}
+
+@media(max-width:768px){
+  /* Hide column chooser and some buttons on mobile */
+  .cc-wrap{display:none!important}
+  .export-btn{font-size:10px!important;padding:4px 8px!important}
+  
+  /* Brand search on mobile */
+  #brandSearchCmd{width:100%!important}
+  
+  /* Upload/download buttons compact */
+  .upload-btn{font-size:10px!important;padding:4px 8px!important}
+  
+  /* Charts container */
+  .cw{max-height:200px!important}
+}
 </style>
 </head>
 <body>
@@ -1567,6 +1631,9 @@ brand:[
 ],
 };
 function ccGet(tbl){
+  // Mobile: use fixed columns
+  const mc=getMobileCols(tbl);
+  if(mc)return mc;
   try{
     const s=localStorage.getItem('zcc_'+tbl);
     if(s){
@@ -1846,6 +1913,21 @@ function saveEmergencyBackup(){
     alert('❌ Error: '+e.message);
   }
 }
+
+// Mobile column control
+const _isMobile=window.innerWidth<=768;
+const _mobileItemCols=['brand','forecast','sold','ach','rem_fc','avail','gap'];
+const _mobileExpCols=['exp_dt','stage','qty','act_col'];
+const _mobileBrandCols=['items','forecast','sold','ach','avail','rem_fc','over_fc'];
+
+function getMobileCols(tbl){
+  if(!_isMobile)return null;
+  if(tbl==='cmd')return _mobileItemCols;
+  if(tbl==='exp')return _mobileExpCols;
+  if(tbl==='brand')return _mobileBrandCols;
+  return null;
+}
+
 function toggleChip(el){const was=['a-r','a-a','a-b','a-p'].some(c=>el.classList.contains(c));document.querySelectorAll('#chipArea .chip').forEach(c=>c.className='chip');activeFilters.chip=was?'':el.dataset.id;if(!was)el.classList.add(el.dataset.ac);renderTable();updateFilterBar();}
 function setUnit(u,btn){unit=u;document.querySelectorAll('#cmdUT .ub').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTable();}
 function applyF(){activeFilters.search=document.getElementById('searchBox').value;activeFilters.brand=document.getElementById('brandSel').value;renderTable();updateFilterBar();}
