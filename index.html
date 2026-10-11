@@ -1908,7 +1908,7 @@ function downloadFilteredExpiry(){
   const codes=new Set();
   rows.forEach(r=>{
     const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
-    if(codeSpan){const parts=codeSpan.textContent.trim().split(' | ');parts.forEach(p=>{const c=p.trim();if(c){codes.add(c);if(newToOld[c])codes.add(newToOld[c]);}});}
+    if(codeSpan){codeSpan.textContent.trim().split(' | ').forEach(p=>{const c=p.trim();if(c)codes.add(c);});}
   });
   // Filter expiry rows
   const filtered=__EXP.filter(e=>codes.has(e.code));
