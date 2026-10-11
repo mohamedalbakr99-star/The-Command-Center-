@@ -2633,7 +2633,7 @@ function toN(v){return parseFloat((v||'0').toString().replace(/,/g,''))||0;}
 async function fetchSheet(sheet){
 for(let attempt=0;attempt<3;attempt++){
   try{
-    const r=await fetch(API_URL+'?sheet='+sheet,{redirect:'follow',mode:'cors'});
+    const r=await fetch(API_URL+'?sheet='+sheet+'&t='+Date.now(),{redirect:'follow',mode:'cors'});
     if(!r.ok){if(attempt<2){await new Promise(r=>setTimeout(r,1000));continue;}throw new Error('HTTP '+r.status+' for '+sheet);}
     const text=await r.text();
     if(!text||text.trim().startsWith('<')){if(attempt<2){await new Promise(r=>setTimeout(r,1000));continue;}throw new Error('Bad response for '+sheet);}
@@ -2648,21 +2648,37 @@ async function refreshFromSheets(){
 const btn=document.getElementById('refreshBtn');
 if(btn){btn.textContent='⏳ Loading...';btn.disabled=true;}
 try{
-const [S,M,F,H,C,A,D]=await Promise.all([
+const [S,M,F,H,C,A,D,DM]=await Promise.all([
 fetchSheet('stock'),fetchSheet('master'),fetchSheet('forecast'),
 fetchSheet('sales_hist'),fetchSheet('sales_cur'),
 fetchSheet('actions').catch(e=>{console.warn('Actions fetch failed:',e);return [];}),
 fetchSheet('dispatch').catch(e=>{console.warn('Dispatch fetch failed:',e);return [];}),
+fetchSheet('damaged').catch(e=>{console.warn('Damaged fetch failed:',e);return [];}),
 ]);
-console.log('Fetched:',S.length,M.length,F.length,H.length,C.length,'Actions:',A.length,'Dispatch:',D.length);
-processLive(S,M,F,H,C,A,D);
+console.log('Fetched:',S.length,M.length,F.length,H.length,C.length,'Actions:',A.length,'Dispatch:',D.length,'Damaged:',DM.length);
+const failedSheets=[];
+if(!S.length)failedSheets.push('Stock');
+if(!M.length)failedSheets.push('Master');
+if(!F.length)failedSheets.push('Forecast');
+if(!H.length)failedSheets.push('Sales History');
+if(!C.length)failedSheets.push('Sales Current');
+if(failedSheets.length){
+  const oldBanner=document.getElementById('fetchWarningBanner');
+  if(oldBanner)oldBanner.remove();
+  const banner=document.createElement('div');
+  banner.id='fetchWarningBanner';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff9800;color:#000;padding:12px 20px;text-align:center;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;';
+  banner.innerHTML='⚠️ فشل تحميل: '+failedSheets.join(', ')+' — البيانات المعروضة من آخر نسخة محفوظة <button onclick="this.parentElement.remove()" style="background:#fff;color:#000;border:none;padding:4px 16px;border-radius:4px;cursor:pointer;font-weight:600;">OK</button>';
+  document.body.prepend(banner);
+}
+processLive(S,M,F,H,C,A,D,DM);
 }catch(e){
 console.error(e);
 alert('Error: '+e.message);
 }
 if(btn){btn.textContent='🔄 Refresh';btn.disabled=false;}
 }
-function processLive(stockData,masterData,fcData,histData,curData,actionsData,dispatchData){
+function processLive(stockData,masterData,fcData,histData,curData,actionsData,dispatchData,damagedData){
 const mst={};
 const newToOld={};  // New Code → Old Code mapping
 masterData.filter(r=>(r['Type']||'').trim()==='Finished Good').forEach(r=>{
@@ -2683,7 +2699,8 @@ if(v>0)fc[code]=(fc[code]||0)+v;
 });
 const avail={},hold={},stages={},nearExp={},expRows=[];
 stockData.filter(r=>(r['Category']||r['Category ']||'').trim()==='Finished Good').forEach(r=>{
-const code=(r['Material']||'').trim();if(!code)return;
+let code=(r['Material']||'').trim();if(!code)return;
+if(code&&newToOld[code])code=newToOld[code];
 const action=(r['Comment / Taken Actions']||r['Comment / Taken Actions ']||'').trim().toLowerCase();
 const boxes=toN(r[' QY by Boxes ']||r['QY by Boxes']||r['QY by Boxes ']||0);
 const remDays=toN(r['Remaining days to Expiration date']||0);
@@ -2830,13 +2847,53 @@ if(dispatchData&&dispatchData.length){
   console.log('Dispatch raw data:',dispatchData[0]);
   console.log('Dispatch keys:',Object.keys(dispatchData[0]));
   dispatchData.forEach(r=>{
-    const code=(r['Code']||r['Code ']||r['code']||r['Item']||r['Item ']||Object.values(r)[1]||'').trim();
+    let code=(r['Code']||r['Code ']||r['code']||r['Item']||r['Item ']||Object.values(r)[1]||'').trim();
+    if(code&&newToOld[code])code=newToOld[code];
     const boxes=parseFloat((r['Boxes']||r['Boxes ']||'0').toString().replace(/,/g,''))||0;
     console.log('Dispatch row - code:',JSON.stringify(code),'boxes:',boxes);
     if(!code||!boxes)return;
     todayDispatch[code]=(todayDispatch[code]||0)+boxes;
   });
   console.log("Today's dispatch loaded:",Object.keys(todayDispatch).length,'items',todayDispatch);
+}
+
+// ── DAMAGED SHEET PROCESSING ──
+const dmgMap={};  // key: code+'_'+expISO → damaged boxes
+if(damagedData&&damagedData.length){
+  damagedData.forEach(r=>{
+    let code=(r['Item Code']||'').trim();
+    if(!code)return;
+    if(newToOld[code])code=newToOld[code];
+    const dqty=toN(r['QY']||0);
+    if(!dqty)return;
+    const expRaw=(r['Expirey Date']||'').trim();
+    if(!expRaw)return;
+    const eo=new Date(expRaw);
+    if(isNaN(eo))return;
+    let yy=eo.getFullYear();if(yy<100)yy+=2000;if(yy<1990)yy+=100;
+    const expISO=yy+'-'+String(eo.getMonth()+1).padStart(2,'0')+'-'+String(eo.getDate()).padStart(2,'0');
+    const key=code+'_'+expISO;
+    dmgMap[key]=(dmgMap[key]||0)+dqty;
+  });
+  console.log('Damaged loaded:',Object.keys(dmgMap).length,'entries',dmgMap);
+}
+// Apply damaged: subtract from original expRows + add Damaged rows
+const dmgRows=[];
+if(Object.keys(dmgMap).length){
+  expRows.forEach(r=>{
+    const key=r.code+'_'+r.expiry;
+    if(dmgMap[key]&&dmgMap[key]>0){
+      const dqty=Math.min(dmgMap[key],r.boxes);
+      // Create damaged row
+      dmgRows.push({...r,boxes:dqty,pallets:Math.round(dqty/r.ps*100)/100,kg:Math.round(dqty*r.ck*10)/10,stage:'Damaged',days:r.days,action:r.action});
+      // Subtract from original
+      r.boxes-=dqty;
+      r.pallets=Math.round(r.boxes/r.ps*100)/100;
+      r.kg=Math.round(r.boxes*r.ck*10)/10;
+      dmgMap[key]-=dqty;
+    }
+  });
+  dmgRows.forEach(dr=>expRows.push(dr));
 }
 
 const allCodes=new Set([...Object.keys(avail),...Object.keys(hold),...Object.keys(fc),...Object.keys(maySoldKg),...Object.keys(todayDispatch)]);
