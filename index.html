@@ -2381,7 +2381,7 @@ prod_dt:`<td style="font-size:10px;color:var(--text3);white-space:nowrap">${r.pr
 exp_dt:`<td style="color:${r.stage==='Damaged'?'var(--damaged)':dc2};font-weight:600;white-space:nowrap">${r.expiry||'—'}</td>`,
 days:`<td style="color:${r.stage==='Damaged'?'var(--damaged)':dc2};font-weight:700">${r.stage==='Damaged'?'—':r.days<0?'Expired':r.days+'d'}</td>`,
 stage:`<td style="color:${stC};font-size:10px;white-space:nowrap">${r.stage}</td>`,
-status:`<td style="color:${acC};font-size:10px;font-weight:600">${r.action}</td>`,
+status:`<td style="color:${acC};font-size:10px;font-weight:600">${r.stage==='Damaged'?'':r.action}</td>`,
 qty:`<td style="font-weight:600">${qvRow(r)}</td>`,
 act_col:`<td style="white-space:nowrap">${saved?`<span style="color:var(--green);font-size:10px;margin-right:6px">✓ ${saved}</span>`:''}<input type="text" value="${saved}" placeholder="Add action..." onchange="saveAction('${ak}',this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--text);font-size:10px;width:140px;outline:none;font-family:var(--font)"/></td>`,
 };
@@ -2894,6 +2894,8 @@ if(Object.keys(dmgMap).length){
     }
   });
   dmgRows.forEach(dr=>expRows.push(dr));
+  // Remove zero-box rows after damaged subtraction (keep Damaged rows)
+  for(let i=expRows.length-1;i>=0;i--){if(expRows[i].boxes<=0 && expRows[i].stage!=='Damaged')expRows.splice(i,1);}
 }
 
 const allCodes=new Set([...Object.keys(avail),...Object.keys(hold),...Object.keys(fc),...Object.keys(maySoldKg),...Object.keys(todayDispatch)]);
