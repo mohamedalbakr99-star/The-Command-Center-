@@ -2162,17 +2162,17 @@ CATS.filter(c=>c&&c!=='nan').forEach(c=>document.getElementById('expCat').append
 }
 function renderExpKPIs(){
 const k=window._LIVE?window._KPI:KPI;
-function makeExpCard(l,v,u,s,a,rows){
-const wa=rows.filter(r=>ACTIONS[r.code+'_'+r.expiry]).reduce((s,r)=>s+r.boxes,0);
-const woa=rows.reduce((s,r)=>s+r.boxes,0)-wa;
+function makeExpCard(l,v,u,s,a,rows,hideActions){
+const wa=hideActions?0:rows.filter(r=>ACTIONS[r.code+'_'+r.expiry]).reduce((s,r)=>s+r.boxes,0);
+const woa=hideActions?0:rows.reduce((s,r)=>s+r.boxes,0)-wa;
 return `<div class="kpi-card" style="--ac:${a}">
 <div class="kpi-l">${l}</div>
 <div class="kpi-v">${v}<span class="kpi-u">${u}</span></div>
 <div class="kpi-s">${s}</div>
-<div class="kpi-detail">
+${hideActions?'':`<div class="kpi-detail">
 <div class="kpi-detail-item"><span>✓ Has Action</span><span style="color:var(--green)">${fmt(wa)}</span></div>
 <div class="kpi-detail-item"><span>⚠ No Action</span><span style="color:var(--amber)">${fmt(woa)}</span></div>
-</div>
+</div>`}
 </div>`;
 }
 const __EK=window._LIVE?window._EXP:EXP_ROWS;
@@ -2189,7 +2189,7 @@ makeExpCard('Exp. 30–60 Days',fmt(k.exp_d30_60_all),'Boxes','Available + Hold'
 makeExpCard('Exp. 60–90 Days',fmt(k.exp_d60_90_all),'Boxes','Available + Hold','var(--amber)',d6090rows)+
 makeExpCard('Exp. > 90 Days',fmt(k.exp_over90_all),'Boxes','Available + Hold','var(--blue)',over90rows)+
 makeExpCard('Already Expired',fmt(k.exp_expired_all),'Boxes','All statuses','var(--expired)',expiredrows)+
-makeExpCard('Damaged',fmt(damagedBoxes),'Boxes','Damaged items','var(--damaged)',damagedrows);
+makeExpCard('Damaged',fmt(damagedBoxes),'Boxes','Damaged items','var(--damaged)',damagedrows,true);
 }
 function renderCriticalCard(){
 const k=window._LIVE?window._KPI:KPI;
@@ -2383,7 +2383,7 @@ days:`<td style="color:${r.stage==='Damaged'?'var(--damaged)':dc2};font-weight:7
 stage:`<td style="color:${stC};font-size:10px;white-space:nowrap">${r.stage}</td>`,
 status:`<td style="color:${acC};font-size:10px;font-weight:600">${r.stage==='Damaged'?'':r.action}</td>`,
 qty:`<td style="font-weight:600">${qvRow(r)}</td>`,
-act_col:`<td style="white-space:nowrap">${saved?`<span style="color:var(--green);font-size:10px;margin-right:6px">✓ ${saved}</span>`:''}<input type="text" value="${saved}" placeholder="Add action..." onchange="saveAction('${ak}',this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--text);font-size:10px;width:140px;outline:none;font-family:var(--font)"/></td>`,
+act_col:r.stage==='Damaged'?`<td style="color:var(--damaged);font-size:10px">—</td>`:`<td style="white-space:nowrap">${saved?`<span style="color:var(--green);font-size:10px;margin-right:6px">✓ ${saved}</span>`:''}<input type="text" value="${saved}" placeholder="Add action..." onchange="saveAction('${ak}',this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--text);font-size:10px;width:140px;outline:none;font-family:var(--font)"/></td>`,
 };
 html+=`<tr class="grp-detail" data-grp="${gid}" style="display:${isOpen?'':'none'}"><td style="padding-left:22px;font-size:10px;color:var(--text3)">${r.code}</td>${visCols.map(c=>cellMap[c.id]||'<td>—</td>').join('')}</tr>`;
 });
