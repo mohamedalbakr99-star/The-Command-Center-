@@ -506,7 +506,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
       </div>
       <div class="exp-filter-bottom">
         <input class="fs" id="expSearch" placeholder="🔍  Search..." oninput="applyExpF()" style="max-width:165px">
-        <select class="fsel" id="expBrand" onchange="applyExpF()"><option value="">All Brands</option><option value="5 Guys">5 Guys</option><option value="Abdo">Abdo</option><option value="Ajwad">Ajwad</option><option value="Al Areesh">Al Areesh</option><option value="Al Faraj">Al Faraj</option><option value="Al Kabeer">Al Kabeer</option><option value="Al Munajem">Al Munajem</option><option value="Al Raya">Al Raya</option><option value="BRF">BRF</option><option value="Casa Pasta">Casa Pasta</option><option value="Charleys">Charleys</option><option value="Crown">Crown</option><option value="Dijla (Mottaa)">Dijla (Mottaa)</option><option value="F &amp; Al Daya">F &amp; Al Daya</option><option value="Fadel Saleem">Fadel Saleem</option><option value="Falah Trading">Falah Trading</option><option value="Finished Good">Finished Good</option><option value="First Food">First Food</option><option value="Food Basics">Food Basics</option><option value="Forzana">Forzana</option><option value="Golden Chicken">Golden Chicken</option><option value="Hardees">Hardees</option><option value="Hatab">Hatab</option><option value="Java Café">Java Café</option><option value="Kudu">Kudu</option><option value="Layan">Layan</option><option value="Limaz">Limaz</option><option value="Lulu">Lulu</option><option value="Mega Store">Mega Store</option><option value="Middle East">Middle East</option><option value="Nesto">Nesto</option><option value="ONLINE">ONLINE</option><option value="Othaim">Othaim</option><option value="Panda">Panda</option><option value="PEARL GULF">PEARL GULF</option><option value="PGT">PGT</option><option value="Qualiko">Qualiko</option><option value="Radwa">Radwa</option><option value="Razan">Razan</option><option value="Sarap Foods">Sarap Foods</option><option value="Sarya">Sarya</option><option value="Saudi Airlines">Saudi Airlines</option><option value="Siniora">Siniora</option><option value="Sunbullah">Sunbullah</option><option value="Tamimi">Tamimi</option><option value="Tip Top">Tip Top</option><option value="Yomna Food">Yomna Food</option><option value="Zamil">Zamil</option><option value="ZAMIL">ZAMIL</option><option value="Zamil ">Zamil </option><option value="ZAMIL MARINE">ZAMIL MARINE</option><option value="ZAMIL MARINR">ZAMIL MARINR</option></select>
+        <input class="fs" id="expBrandSearch" list="expBrandList" placeholder="🔍 Type brand..." style="width:150px" oninput="filterExpBrandDD(this.value)"><datalist id="expBrandList"></datalist><select class="fsel" id="expBrand" onchange="applyExpF()"><option value="">All Brands</option></select>
         <select class="fsel" id="expCat" onchange="applyExpF()"><option value="">All Categories</option><option value="Burger">Burger</option><option value="Calibrated">Calibrated</option><option value="Cold Cuts &amp; Smoked">Cold Cuts &amp; Smoked</option><option value="Cutting Items">Cutting Items</option><option value="FC Marinated ">FC Marinated </option><option value="Formed">Formed</option><option value="Full Muscle">Full Muscle</option><option value="Minced Meat">Minced Meat</option><option value="Oriental">Oriental</option><option value="Sausage &amp; Franks">Sausage &amp; Franks</option><option value="Tender">Tender</option></select>
         <select class="fsel" id="expAction" onchange="applyExpF()">
           <option value="">Available + Hold</option>
@@ -2131,6 +2131,8 @@ function toggleHasAction(){expHasAction=!expHasAction;if(expHasAction)expNoActio
 function clearAllExpFilters(){
 expRange='all';expMonthFilter='';expNoAction=false;expHasAction=false;expBrandF='';expCatF='';expActionF='';expStageF='';expActionTakenF='';expMonthSelectF='';
 document.getElementById('expSearch').value='';
+document.getElementById('expBrandSearch').value='';
+filterExpBrandDD('');
 ['expBrand','expCat','expAction','expStage','expActionTaken','expMonthSelect'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('chipNoAction').className='chip';
 document.getElementById('chipHasAction').className='chip';
@@ -2138,13 +2140,29 @@ document.querySelectorAll('.range-btn').forEach((b,i)=>{b.className='range-btn'+
 renderExpChart();renderStagePie();renderExpTable();
 }
 function initExpFilters(){
-const _allBEx=(window._LIVE&&window._ITEMS)?[...new Set(window._ITEMS.map(i=>i.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b)):BRANDS.filter(b=>b&&b!=='nan').sort((a,b)=>a.localeCompare(b));
-_allBEx.forEach(b=>document.getElementById('expBrand').appendChild(new Option(b,b)));
+const _expData=window._LIVE?window._EXP:EXP_ROWS;
+const _expBrands=[...new Set((_expData||[]).map(r=>r.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b));
+const _ebSel=document.getElementById('expBrand');
+_ebSel.innerHTML='<option value="">All Brands</option>';
+_expBrands.forEach(b=>_ebSel.appendChild(new Option(b,b)));
+const _ebDL=document.getElementById('expBrandList');
+if(_ebDL){_ebDL.innerHTML='';_expBrands.forEach(b=>{const o=document.createElement('option');o.value=b;_ebDL.appendChild(o);});}
 CATS.filter(c=>c&&c!=='nan').forEach(c=>document.getElementById('expCat').appendChild(new Option(c,c)));
 // Populate Action Taken dropdown
 populateActionTakenFilter();
 // Populate Month dropdown
 populateMonthFilter();
+}
+function filterExpBrandDD(txt){
+  const bs=document.getElementById('expBrand');
+  const _expData=window._LIVE?window._EXP:EXP_ROWS;
+  const _all=[...new Set((_expData||[]).map(r=>r.brand).filter(b=>b&&b!=='nan'))].sort((a,b)=>a.localeCompare(b));
+  bs.innerHTML='<option value="">All Brands</option>';
+  const q=(txt||'').toLowerCase();
+  _all.filter(b=>!q||b.toLowerCase().includes(q)).forEach(b=>bs.appendChild(new Option(b,b)));
+  const exact=_all.find(b=>b.toLowerCase()===q);
+  if(exact){bs.value=exact;applyExpF();}
+  else if(!q){bs.value='';applyExpF();}
 }
 function populateActionTakenFilter(){
 const sel=document.getElementById('expActionTaken');
