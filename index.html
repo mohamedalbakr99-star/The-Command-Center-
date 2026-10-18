@@ -521,7 +521,7 @@ body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)
           <option value="__no_action">⚠ No Action</option>
         </select>
         <select class="fsel" id="expMonthSelect" onchange="applyExpF()">
-          <option value="">All Months</option>
+          <option value="">All Expiry Dates</option>
         </select>
       </div>
     </div>
@@ -3099,6 +3099,10 @@ exp_over90_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days>90).redu
 exp_expired_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days<0).reduce((s,r)=>s+r.boxes,0)),
 };
 renderKPIs();renderStages();renderCharts();renderTable();
+// Cleanup ACTIONS: remove keys for items no longer in live data
+const validKeys=new Set(expRows.map(r=>r.code+'_'+r.expiry));
+Object.keys(ACTIONS).forEach(k=>{if(!validKeys.has(k)){delete ACTIONS[k];}});
+try{localStorage.setItem('zamil_actions',JSON.stringify(ACTIONS));}catch(e){}
 populateMonthFilter();populateActionTakenFilter();
 renderExpKPIs();renderCriticalCard();renderExpChart();renderStagePie();renderExpTable();
 renderBrandTable();renderBrandChart();
@@ -3149,6 +3153,8 @@ window._DAY_REV=snap.dayRev;
 window._MONTHLY_REV=snap.monthlyRev;
 Object.assign(ACTIONS,snap.actions||{});
 window._LIVE=true;
+// Cleanup ACTIONS: remove keys for items no longer in snapshot data
+if(snap.exp){const snapKeys=new Set(snap.exp.map(r=>r.code+'_'+r.expiry));Object.keys(ACTIONS).forEach(k=>{if(!snapKeys.has(k)){delete ACTIONS[k];}});try{localStorage.setItem('zamil_actions',JSON.stringify(ACTIONS));}catch(e){}}
 const savedAt=new Date(snap.savedAt);
 document.getElementById('hdrDate').textContent='⏱️ Last: '+savedAt.toLocaleString('en-GB');
 renderKPIs();renderStages();renderCharts();renderTable();
