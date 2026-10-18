@@ -2206,11 +2206,11 @@ ${hideActions?'':`<div class="kpi-detail">
 </div>`;
 }
 const __EK=window._LIVE?window._EXP:EXP_ROWS;
-const near30rows=__EK.filter(r=>r.stage!=='Damaged'&&r.days>=0&&r.days<=30);
-const d3060rows=__EK.filter(r=>r.stage!=='Damaged'&&r.days>30&&r.days<=60);
-const d6090rows=__EK.filter(r=>r.stage!=='Damaged'&&r.days>60&&r.days<=90);
-const over90rows=__EK.filter(r=>r.stage!=='Damaged'&&r.days>90);
-const expiredrows=__EK.filter(r=>r.stage!=='Damaged'&&r.days<0);
+const near30rows=__EK.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>=0&&r.days<=30);
+const d3060rows=__EK.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>30&&r.days<=60);
+const d6090rows=__EK.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>60&&r.days<=90);
+const over90rows=__EK.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>90);
+const expiredrows=__EK.filter(r=>r.stage==='Expired');
 const damagedrows=__EK.filter(r=>r.stage==='Damaged');
 const damagedBoxes=damagedrows.reduce((s,r)=>s+r.boxes,0);
 document.getElementById('expKpis').innerHTML=
@@ -3092,11 +3092,11 @@ fresh_boxes_avail:Math.round(newItems.reduce((s,x)=>s+x.fresh,0)),
 mid_boxes_avail:Math.round(newItems.reduce((s,x)=>s+x.mid,0)),
 near_boxes_avail:Math.round(newItems.reduce((s,x)=>s+x.near,0)),
 exp_boxes_avail:Math.round(newItems.reduce((s,x)=>s+x.expired,0)),
-exp_near30_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days>=0&&r.days<=30).reduce((s,r)=>s+r.boxes,0)),
-exp_d30_60_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days>30&&r.days<=60).reduce((s,r)=>s+r.boxes,0)),
-exp_d60_90_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days>60&&r.days<=90).reduce((s,r)=>s+r.boxes,0)),
-exp_over90_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days>90).reduce((s,r)=>s+r.boxes,0)),
-exp_expired_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.days<0).reduce((s,r)=>s+r.boxes,0)),
+exp_near30_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>=0&&r.days<=30).reduce((s,r)=>s+r.boxes,0)),
+exp_d30_60_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>30&&r.days<=60).reduce((s,r)=>s+r.boxes,0)),
+exp_d60_90_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>60&&r.days<=90).reduce((s,r)=>s+r.boxes,0)),
+exp_over90_all:Math.round(expRows.filter(r=>r.stage!=='Damaged'&&r.stage!=='Expired'&&r.days>90).reduce((s,r)=>s+r.boxes,0)),
+exp_expired_all:Math.round(expRows.filter(r=>r.stage==='Expired').reduce((s,r)=>s+r.boxes,0)),
 };
 renderKPIs();renderStages();renderCharts();renderTable();
 // Cleanup ACTIONS: remove keys for items no longer in live data
