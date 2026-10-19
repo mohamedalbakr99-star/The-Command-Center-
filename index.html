@@ -68,7 +68,8 @@ main{flex:1}
 .ks-plan  .kpi-section-label{color:var(--amber);background:rgba(240,160,32,.12)}
 .ks-expiry .kpi-section-label{color:var(--near);background:rgba(232,122,48,.12)}
 .kpi-row{display:flex;flex-wrap:wrap;gap:10px}
-.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;position:relative;overflow:hidden;min-width:130px;flex:1}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;position:relative;overflow:hidden;min-width:130px;flex:1;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;cursor:default}
+.kpi-card:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 8px 24px rgba(0,0,0,.18);border-color:var(--ac,var(--green));z-index:2}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--green))}
 .ks-stock  .kpi-card{border-color:rgba(55,138,221,.2);background:linear-gradient(135deg,var(--bg2) 60%,rgba(55,138,221,.04))}
 .ks-sales  .kpi-card{border-color:rgba(29,185,122,.2);background:linear-gradient(135deg,var(--bg2) 60%,rgba(29,185,122,.04))}
@@ -205,6 +206,7 @@ body.light .header{box-shadow:0 1px 4px rgba(0,0,0,.08)}
 body.light th{background:var(--bg3)}
 body.light .grp-header td{background:var(--bg3)}
 body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)}
+body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
 
 
 /* ═══ MOBILE RESPONSIVE ═══ */
