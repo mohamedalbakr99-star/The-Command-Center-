@@ -2932,7 +2932,7 @@ if(Object.keys(dmgMap).length){
     if(dmgMap[key]&&dmgMap[key]>0){
       const dqty=Math.min(dmgMap[key],r.boxes);
       // Create damaged row
-      dmgRows.push({...r,boxes:dqty,pallets:Math.round(dqty/r.ps*100)/100,kg:Math.round(dqty*r.ck*10)/10,stage:'Damaged',days:r.days,action:''});
+      dmgRows.push({...r,boxes:dqty,pallets:Math.round(dqty/r.ps*100)/100,kg:Math.round(dqty*r.ck*10)/10,stage:'Damaged',days:r.days,action:r.action});
       // Subtract from original
       r.boxes-=dqty;
       r.pallets=Math.round(r.boxes/r.ps*100)/100;
