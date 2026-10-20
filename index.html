@@ -1919,6 +1919,7 @@ function downloadFilteredExpiry(){
 }
 // Download expiry summary grouped by months
 function downloadExpiryByMonths(){
+  const b=document.getElementById('newBadge');if(b)b.style.display='none';
   const __EXP=window._LIVE?window._EXP:_ER;
   if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
   const rows=document.querySelectorAll('#tBody tr:not(.item-exp-row):not(.total-row)');
@@ -1950,6 +1951,7 @@ function downloadExpiryByMonths(){
 }
 // Download expiry page data grouped by months (Available + Hold with details)
 function downloadExpPageByMonths(){
+  const b=document.getElementById('newBadgeExp');if(b)b.style.display='none';
   const __EXP=window._LIVE?window._EXP:_ER;
   if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
   // Get visible items from expiry table (respects current filters)
@@ -3306,9 +3308,9 @@ function checkPwd(){
     const key='zamil_cc_seen_expiry_months_v1';
     if(localStorage.getItem(key))return;
     localStorage.setItem(key,'1');
-    // Show badges on both pages
+    // Show badges on both pages - stay visible until user clicks the button
     ['newBadge','newBadgeExp'].forEach(id=>{const badge=document.getElementById(id);
-    if(badge){badge.style.display='inline';setTimeout(()=>{badge.style.opacity='0';badge.style.transition='opacity .5s';setTimeout(()=>badge.remove(),600);},6000);}});
+    if(badge){badge.style.display='inline';}});
     // Show toast
     const toast=document.createElement('div');
     toast.className='new-toast';
