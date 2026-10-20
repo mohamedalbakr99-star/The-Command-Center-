@@ -207,6 +207,11 @@ body.light th{background:var(--bg3)}
 body.light .grp-header td{background:var(--bg3)}
 body.light .chart-card,body.light .kpi-card{box-shadow:0 1px 3px rgba(0,0,0,.06)}
 body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
+.new-badge{position:absolute;top:-8px;right:-8px;background:var(--red,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;animation:badgePulse 1s ease-in-out 3;pointer-events:none;letter-spacing:.5px}
+@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.new-toast{position:fixed;bottom:30px;right:30px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:14px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,.25);transform:translateX(120%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:10px;font-family:var(--font)}
+.new-toast.show{transform:translateX(0)}
+.new-toast .toast-icon{font-size:20px}
 
 
 /* ═══ MOBILE RESPONSIVE ═══ */
@@ -384,7 +389,8 @@ body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
     <span style="font-size:11px;color:var(--text3)" id="tFoot">362 of 362 items</span>
     <div class="tbl-right">
       <button class="export-btn" onclick="exportTableExcel()">⬇️ Export CSV</button>
-      <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Download Expiry</button>
+      <button class="export-btn" onclick="downloadFilteredExpiry()" style="background:rgba(55,138,221,.12);color:var(--blue)">📅 Detailed Expiry</button>
+      <span style="position:relative;display:inline-block"><button class="export-btn" id="expByMonthBtn" onclick="downloadExpiryByMonths()" style="background:rgba(16,185,129,.12);color:var(--green)">📊 Expiry by Months</button><span class="new-badge" id="newBadge" style="display:none">NEW</span></span>
       
       <div class="cc-wrap">
         <button class="cc-btn" onclick="ccOpen('cmd')">⚙️ Columns</button>
@@ -550,6 +556,7 @@ body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
           <div class="cc-panel" id="cc-exp" style="right:0;left:auto"><h4>Show / Hide Columns</h4><div id="cc-exp-rows"></div><button class="cc-reset" onclick="ccReset('exp')">↺ Reset</button></div>
         </div>
         <button class="export-btn" onclick="exportExpExcel()">⬇️ Export CSV</button>
+        <span style="position:relative;display:inline-block"><button class="export-btn" onclick="downloadExpPageByMonths()" style="background:rgba(16,185,129,.12);color:var(--green)">📊 Expiry by Months</button><span class="new-badge" id="newBadgeExp" style="display:none">NEW</span></span>
       </div>
     </div>
     <div class="tw-r">
@@ -1910,6 +1917,70 @@ function downloadFilteredExpiry(){
   const data=filtered.map(e=>[e.code,e.desc,e.brand,e.cat,e.expiry,e.prod_date,e.stage,e.action,e.boxes,e.days]);
   dlCSV([hdrs,...data],'zamil_expiry_filtered_'+today()+'.csv');
 }
+// Download expiry summary grouped by months
+function downloadExpiryByMonths(){
+  const __EXP=window._LIVE?window._EXP:_ER;
+  if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
+  const rows=document.querySelectorAll('#tBody tr:not(.item-exp-row):not(.total-row)');
+  const codes=new Set();
+  rows.forEach(r=>{
+    const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
+    if(codeSpan){codeSpan.textContent.trim().split(' | ').forEach(p=>{const c=p.trim();if(c)codes.add(c);});}
+  });
+  const filtered=__EXP.filter(e=>codes.has(e.code)&&e.action==='Available');
+  if(!filtered.length){alert('No expiry data for filtered items');return;}
+  const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const grouped={};
+  filtered.forEach(e=>{
+    const m=(e.expiry||'').slice(0,7);if(!m)return;
+    const key=e.code+'||'+m;
+    if(!grouped[key]){grouped[key]={code:e.code,desc:e.desc,brand:e.brand,month:m,boxes:0,batches:0,stage:e.stage};}
+    grouped[key].boxes+=e.boxes;
+    grouped[key].batches++;
+    const stOrder={'Expired':0,'Near Expirey':1,'Mid of shelf life':2,'Fresh':3};
+    if((stOrder[e.stage]||3)<(stOrder[grouped[key].stage]||3))grouped[key].stage=e.stage;
+  });
+  const sortedRows=Object.values(grouped).sort((a,b)=>a.code.localeCompare(b.code)||a.month.localeCompare(b.month));
+  const hdrs=['Code','Description','Brand','Month','Boxes','Batches','Stage'];
+  const data=sortedRows.map(r=>{
+    const mn=parseInt(r.month.slice(5,7));const yr=r.month.slice(0,4);
+    return [r.code,r.desc,r.brand,mNames[mn]+' '+yr,r.boxes,r.batches,r.stage];
+  });
+  dlCSV([hdrs,...data],'zamil_expiry_by_months_'+today()+'.csv');
+}
+// Download expiry page data grouped by months (Available + Hold with details)
+function downloadExpPageByMonths(){
+  const __EXP=window._LIVE?window._EXP:_ER;
+  if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
+  // Get visible items from expiry table (respects current filters)
+  const visibleCodes=new Set();
+  document.querySelectorAll('#expTBody .grp-header').forEach(r=>{
+    if(r.style.display==='none')return;
+    const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
+    if(codeSpan){const c=codeSpan.textContent.trim();if(c)visibleCodes.add(c);}
+  });
+  const filtered=visibleCodes.size>0?__EXP.filter(e=>visibleCodes.has(e.code)):__EXP;
+  if(!filtered.length){alert('No expiry data for filtered items');return;}
+  const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const grouped={};
+  filtered.forEach(e=>{
+    const m=(e.expiry||'').slice(0,7);if(!m)return;
+    const status=e.action||'Available';
+    const key=e.code+'||'+m+'||'+status;
+    if(!grouped[key]){grouped[key]={code:e.code,desc:e.desc,brand:e.brand,cat:e.cat,month:m,boxes:0,batches:0,stage:e.stage,status:status};}
+    grouped[key].boxes+=e.boxes;
+    grouped[key].batches++;
+    const stOrder={'Expired':0,'Near Expirey':1,'Mid of shelf life':2,'Fresh':3};
+    if((stOrder[e.stage]||3)<(stOrder[grouped[key].stage]||3))grouped[key].stage=e.stage;
+  });
+  const sortedRows=Object.values(grouped).sort((a,b)=>a.code.localeCompare(b.code)||a.month.localeCompare(b.month)||a.status.localeCompare(b.status));
+  const hdrs=['Code','Description','Brand','Category','Month','Status','Boxes','Batches','Stage'];
+  const data=sortedRows.map(r=>{
+    const mn=parseInt(r.month.slice(5,7));const yr=r.month.slice(0,4);
+    return [r.code,r.desc,r.brand,r.cat,mNames[mn]+' '+yr,r.status,r.boxes,r.batches,r.stage];
+  });
+  dlCSV([hdrs,...data],'zamil_expiry_by_months_all_'+today()+'.csv');
+}
 // Save Emergency Backup - embeds current live data into HTML for offline use
 function askBackupPassword(){
   const pw=prompt('🔒 Enter backup password:');
@@ -3228,6 +3299,25 @@ function checkPwd(){
     document.getElementById('pwdInput').focus();
   }
 }
+
+// New Feature Notification - shows once per user
+(function(){
+  try{
+    const key='zamil_cc_seen_expiry_months_v1';
+    if(localStorage.getItem(key))return;
+    localStorage.setItem(key,'1');
+    // Show badges on both pages
+    ['newBadge','newBadgeExp'].forEach(id=>{const badge=document.getElementById(id);
+    if(badge){badge.style.display='inline';setTimeout(()=>{badge.style.opacity='0';badge.style.transition='opacity .5s';setTimeout(()=>badge.remove(),600);},6000);}});
+    // Show toast
+    const toast=document.createElement('div');
+    toast.className='new-toast';
+    toast.innerHTML='<span class="toast-icon">🆕</span><span>New Feature: <b>Expiry by Months</b> download is now available!</span>';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.classList.add('show'),100);
+    setTimeout(()=>{toast.classList.remove('show');setTimeout(()=>toast.remove(),500);},4000);
+  }catch(e){}
+})();
 
 </script>
 
