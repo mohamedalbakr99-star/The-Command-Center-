@@ -1952,7 +1952,10 @@ function downloadExpPageByMonths(){
     const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
     if(codeSpan){const c=codeSpan.textContent.trim();if(c)visibleCodes.add(c);}
   });
-  const filtered=visibleCodes.size>0?__EXP.filter(e=>visibleCodes.has(e.code)):__EXP;
+  let filtered=visibleCodes.size>0?__EXP.filter(e=>visibleCodes.has(e.code)):__EXP;
+  // Respect month filter if active
+  const mf=expMonthFilter||'';
+  if(mf)filtered=filtered.filter(e=>(e.expiry||'').slice(0,7)===mf);
   if(!filtered.length){alert('No expiry data for filtered items');return;}
   const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const grouped={};
