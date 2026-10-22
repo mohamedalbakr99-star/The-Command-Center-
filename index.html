@@ -2698,9 +2698,12 @@ dlCSV([hdrs,...data],'zamil_expiry_'+today()+'.csv');
 function exportBrandExcel(){
 const _BSE=window._LIVE&&window._BRAND_SUMMARY?window._BRAND_SUMMARY:BRANDS_SUMMARY;
 const brands=_BSE.filter(b=>b.brand&&b.brand!=='nan');
-const hdrs=['Brand','Items','Forecast(Bx)','Shipped(Bx)','Ach%',"Today's Dispatch(Bx)",'Rem.FC(Bx)','Avail(Bx)','Hold(Bx)','Ready to Dispatch(Bx)','Trucks','Over Forecast(Bx)','Gap(Bx)','Forecast Coverage %','Stock vs Rem%','Near Exp(Bx)'];
-const data=brands.map(b=>[b.brand,b.items,b.forecast_boxes,b.may_sold_boxes,b.forecast_achievement_pct,b.today_dispatch_boxes||0,b.rem_forecast_boxes,b.avail_boxes,b.hold_boxes,b.dispatch_boxes,b.trucks,b.over_forecast_boxes||0,b.production_gap_boxes,(b.forecast_coverage_pct||0)<0?'∞':(b.forecast_coverage_pct||0),b.stock_vs_tgt<0?'∞':b.stock_vs_tgt,b.near_boxes]);
-dlCSV([hdrs,...data],'zamil_brands_'+today()+'.csv');
+const u=brandUnit==='pallets'?'Plt':brandUnit==='kg'?'KG':'Bx';
+const sfx=brandUnit==='pallets'?'pallets':brandUnit==='kg'?'kg':'boxes';
+function bv(b,key){if(brandUnit==='pallets')return b[key.replace('boxes','pallets')]??b[key]??0;if(brandUnit==='kg')return b[key.replace('boxes','kg')]??b[key]??0;return b[key]??0;}
+const hdrs=['Brand','Items','Forecast('+u+')','Shipped('+u+')','Ach%',"Today's Dispatch("+u+')','Rem.FC('+u+')','Avail('+u+')','Hold('+u+')','Ready to Dispatch('+u+')','Trucks','Over Forecast('+u+')','Gap('+u+')','Forecast Coverage %','Stock vs Rem%','Near Exp('+u+')'];
+const data=brands.map(b=>[b.brand,b.items,bv(b,'forecast_boxes'),bv(b,'may_sold_boxes'),b.forecast_achievement_pct,bv(b,'today_dispatch_boxes'),bv(b,'rem_forecast_boxes'),bv(b,'avail_boxes'),bv(b,'hold_boxes'),bv(b,'dispatch_boxes'),b.trucks,bv(b,'over_forecast_boxes'),bv(b,'production_gap_boxes'),(b.forecast_coverage_pct||0)<0?'∞':(b.forecast_coverage_pct||0),b.stock_vs_tgt<0?'∞':b.stock_vs_tgt,bv(b,'near_boxes')]);
+dlCSV([hdrs,...data],'zamil_brands_'+sfx+'_'+today()+'.csv');
 }
 function dlCSV(rows,filename){const csv=rows.map(r=>r.map(v=>typeof v==='string'&&(v.includes(',')||v.includes('"'))?`"${v.replace(/"/g,'""')}"`:v??'').join(',')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
 function today(){return new Date().toISOString().slice(0,10);}
