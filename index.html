@@ -1961,19 +1961,9 @@ function downloadExpiryByMonths(){
 // Download expiry page data grouped by months (Available + Hold with details)
 function downloadExpPageByMonths(){
   const b=document.getElementById('newBadgeExp');if(b)b.style.display='none';
-  const __EXP=window._LIVE?window._EXP:_ER;
-  if(!__EXP||!__EXP.length){alert('No expiry data loaded');return;}
-  // Get visible items from expiry table (respects current filters)
-  const visibleCodes=new Set();
-  document.querySelectorAll('#expTBody .grp-header').forEach(r=>{
-    if(r.style.display==='none')return;
-    const codeSpan=r.querySelector('span[style*="font-size:9.5px"]');
-    if(codeSpan){const c=codeSpan.textContent.trim();if(c)visibleCodes.add(c);}
-  });
-  let filtered=visibleCodes.size>0?__EXP.filter(e=>visibleCodes.has(e.code)):__EXP;
-  // Respect month filter if active
-  const mf=expMonthFilter||'';
-  if(mf)filtered=filtered.filter(e=>(e.expiry||'').slice(0,7)===mf);
+  // Use getExpFiltered() to apply ALL active filters (brand, stage, range, month, actions, etc.)
+  let filtered=getExpFiltered();
+  if(!filtered||!filtered.length){alert('No expiry data for current filters');return;}
   if(!filtered.length){alert('No expiry data for filtered items');return;}
   const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const grouped={};
