@@ -4017,6 +4017,16 @@ async function authDoLogout(){
   if(typeof _authRestartCanvas==='function') _authRestartCanvas();
 }
 
+// ===== AUTO-LOGOUT ON PAGE CLOSE =====
+window.addEventListener('beforeunload',function(){
+  if(!authSession||!authSession.visit_row) return;
+  var visitedTabs=[...new Set(authPagesVisited)].join(', ');
+  var payload=JSON.stringify({action:'logout',visit_row:authSession.visit_row,pages_viewed:visitedTabs});
+  if(navigator.sendBeacon){
+    navigator.sendBeacon(AUTH_API,new Blob([payload],{type:'text/plain'}));
+  }
+});
+
 // ===== ERROR / SUCCESS MESSAGES =====
 function authShowError(msg){
   const el=document.getElementById('authErrorMsg');el.innerHTML='❌ '+msg;el.style.display='block';
