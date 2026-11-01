@@ -294,9 +294,291 @@ body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
   .exp-charts{grid-template-columns:1fr!important}
   .stage-grid{grid-template-columns:repeat(3,1fr)!important}
 }
+
+/* ===== LOGIN SYSTEM CSS ===== */
+
+/* Force dark theme for login screen — override body.light variables */
+body.not-authenticated{
+  --bg:#0a0c12!important;--bg2:#13161d!important;--bg3:#1a1e27!important;--bg4:#222738!important;
+  --border:#2a2f3f!important;--border2:#333a50!important;
+  --text:#e8eaf0!important;--text2:#9aa0b8!important;--text3:#5a6280!important;
+  --green:#1db97a!important;--amber:#f0a020!important;--red:#e24b4a!important;--blue:#378ADD!important;--purple:#9b6dff!important;
+  background:#0a0c12!important;overflow:hidden;
+}
+
+/* Hide dashboard until authenticated */
+body.not-authenticated main,
+body.not-authenticated .header,
+body.not-authenticated .tabs,
+body.not-authenticated .footer{display:none!important}
+
+/* Stars + Particles Canvas */
+#bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;display:none}
+body.not-authenticated #bgCanvas{display:block}
+
+/* Floating Orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:.1;z-index:1;pointer-events:none;display:none}
+body.not-authenticated .orb{display:block}
+.orb-1{width:400px;height:400px;background:var(--blue);top:-100px;right:-100px;animation:orbFloat1 15s ease-in-out infinite}
+.orb-2{width:350px;height:350px;background:var(--green);bottom:-80px;left:-80px;animation:orbFloat2 18s ease-in-out infinite}
+.orb-3{width:250px;height:250px;background:var(--purple);top:50%;left:50%;animation:orbFloat3 20s ease-in-out infinite}
+@keyframes orbFloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,80px)}}
+@keyframes orbFloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(80px,-60px)}}
+@keyframes orbFloat3{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-30%,-70%) scale(1.2)}}
+
+/* Cinematic Intro */
+.intro-overlay{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg)}
+.intro-overlay.hidden{display:none}
+.intro-line{width:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),var(--green),transparent);animation:lineExpand 1.5s ease-out .3s forwards;margin-bottom:40px}
+@keyframes lineExpand{to{width:300px}}
+.intro-eagle{opacity:0;transform:scale(.5);animation:logoReveal .8s cubic-bezier(.16,1,.3,1) 1s forwards}
+@keyframes logoReveal{to{opacity:1;transform:scale(1)}}
+.intro-title-text{opacity:0;font-family:var(--font-head);font-size:36px;font-weight:800;letter-spacing:2px;margin-top:16px;animation:titleSlide .8s cubic-bezier(.16,1,.3,1) 1.4s forwards;background:linear-gradient(135deg,var(--text),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+@keyframes titleSlide{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.intro-sub-text{opacity:0;font-size:13px;color:var(--text3);letter-spacing:4px;text-transform:uppercase;margin-top:8px;animation:titleSlide .6s ease 1.8s forwards}
+.intro-tagline{opacity:0;font-size:14px;color:var(--text2);letter-spacing:4px;text-transform:uppercase;margin-top:8px;font-weight:500;animation:titleSlide .5s ease 2s forwards}
+.intro-loading{opacity:0;margin-top:40px;animation:titleSlide .5s ease 2.3s forwards}
+.intro-loading .loading-bar{width:200px;height:3px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.intro-loading .loading-fill{width:0;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px;animation:loadFill 1.5s ease 2.6s forwards}
+@keyframes loadFill{to{width:100%}}
+.intro-overlay.fade-out{animation:introFade .8s ease forwards}
+@keyframes introFade{to{opacity:0;pointer-events:none}}
+
+/* Eagle SVG Animation */
+.eagle-svg{filter:drop-shadow(0 0 20px rgba(55,138,221,.4))}
+.eagle-svg .wing-L{animation:wingLeft 3s ease-in-out infinite;transform-origin:60% 50%}
+.eagle-svg .wing-R{animation:wingRight 3s ease-in-out infinite;transform-origin:40% 50%}
+@keyframes wingLeft{0%,100%{transform:rotate(0)}50%{transform:rotate(-2deg) translateY(-1px)}}
+@keyframes wingRight{0%,100%{transform:rotate(0)}50%{transform:rotate(2deg) translateY(-1px)}}
+.intro-eagle .eagle-svg{animation:eagleGlow 2s ease-in-out 1.5s infinite alternate}
+@keyframes eagleGlow{to{filter:drop-shadow(0 0 40px rgba(55,138,221,.7))}}
+
+/* Login Page */
+.login-page{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s ease}
+.login-page.visible{opacity:1;pointer-events:all}
+
+/* Animated Gradient Border */
+.login-wrapper{position:relative;width:90%;max-width:420px;padding:2px;border-radius:22px;overflow:hidden}
+.login-wrapper::before{content:'';position:absolute;inset:-2px;background:conic-gradient(from var(--border-angle,0deg),var(--blue),var(--green),var(--purple),var(--blue));border-radius:22px;z-index:-1;animation:rotateBorder 4s linear infinite}
+@keyframes rotateBorder{to{--border-angle:360deg}}
+@property --border-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+
+.login-container{width:100%;padding:36px 32px;background:rgba(19,22,29,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;transform:translateY(30px);opacity:0;transition:all .8s cubic-bezier(.16,1,.3,1)}
+.login-page.visible .login-container{transform:translateY(0);opacity:1}
+
+.login-greeting{text-align:center;margin-bottom:4px;font-size:13px;color:var(--text2);opacity:0;animation:titleSlide .5s ease .2s forwards}
+
+.login-logo{text-align:center;margin-bottom:6px}
+.login-logo .logo-eagle{margin-bottom:6px}
+.login-logo .logo-text-title{font-family:var(--font-head);font-size:24px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--text),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-logo .logo-sub-text{font-size:12px;color:var(--text2);margin-top:4px;letter-spacing:2.5px;text-transform:uppercase;font-weight:500}
+.login-logo .logo-tagline{font-size:11px;color:var(--text2);margin-top:5px;letter-spacing:3.5px;text-transform:uppercase;opacity:.85;font-weight:500}
+
+.login-tabs{display:flex;gap:0;margin:18px 0;background:var(--bg3);border-radius:10px;padding:3px;position:relative}
+.login-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;color:var(--text3);transition:all .3s;position:relative;z-index:1}
+.login-tab.active{color:#fff}
+.tab-indicator{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);background:var(--blue);border-radius:8px;transition:transform .3s cubic-bezier(.16,1,.3,1);z-index:0}
+.tab-indicator.right{transform:translateX(100%)}
+
+.login-form-group{margin-bottom:13px;opacity:0;transform:translateY(10px);animation:fieldAppear .4s ease forwards}
+.login-form-group:nth-child(1){animation-delay:.1s}
+.login-form-group:nth-child(2){animation-delay:.2s}
+.login-form-group:nth-child(3){animation-delay:.3s}
+.login-form-group:nth-child(4){animation-delay:.4s}
+.login-form-group:nth-child(5){animation-delay:.5s}
+@keyframes fieldAppear{to{opacity:1;transform:translateY(0)}}
+.login-form-group label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+
+.login-input-wrap{position:relative}
+.login-input-wrap input,.login-form-group input{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:all .3s}
+.login-input-wrap input{padding-right:42px}
+.login-input-wrap input:focus,.login-form-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(55,138,221,.15)}
+.login-input-wrap input::placeholder,.login-form-group input::placeholder{color:var(--text3)}
+
+.toggle-pass{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:4px;transition:color .2s}
+.toggle-pass:hover{color:var(--text)}
+
+.pass-strength{margin-top:5px;display:none}
+.pass-strength .strength-bar{height:3px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.pass-strength .strength-fill{height:100%;width:0;border-radius:3px;transition:all .4s cubic-bezier(.16,1,.3,1)}
+.pass-strength .strength-text{font-size:9px;margin-top:3px;text-align:right;letter-spacing:.5px;text-transform:uppercase}
+
+.remember-row{display:flex;align-items:center;margin-top:2px;margin-bottom:2px}
+.remember-row label{font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:8px}
+.toggle-switch{position:relative;width:36px;height:19px;background:var(--bg4);border-radius:12px;cursor:pointer;transition:background .3s;flex-shrink:0}
+.toggle-switch.on{background:var(--blue)}
+.toggle-switch .toggle-knob{position:absolute;top:2px;left:2px;width:15px;height:15px;background:#fff;border-radius:50%;transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.toggle-switch.on .toggle-knob{transform:translateX(17px)}
+
+.auto-note{text-align:center;margin-top:6px;font-size:10px;color:var(--text3);opacity:.7;display:flex;align-items:center;justify-content:center;gap:4px}
+
+.btn-login{width:100%;padding:12px;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .3s;margin-top:10px;position:relative;overflow:hidden;background:linear-gradient(135deg,#2d7dd2,var(--blue))}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(55,138,221,.35)}
+.btn-login:active{transform:translateY(0)}
+.btn-register{background:linear-gradient(135deg,#17a06a,var(--green))}
+.btn-register:hover{box-shadow:0 8px 25px rgba(29,185,122,.35)}
+.btn-login::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transition:left .5s}
+.btn-login:hover::after{left:100%}
+.btn-login.loading{pointer-events:none;opacity:.7}
+.btn-login.loading .btn-text{visibility:hidden}
+.btn-login .spinner{display:none;position:absolute;inset:0;align-items:center;justify-content:center}
+.btn-login.loading .spinner{display:flex}
+.spinner-dot{width:6px;height:6px;background:#fff;border-radius:50%;margin:0 3px;animation:spinBounce .6s ease-in-out infinite}
+.spinner-dot:nth-child(2){animation-delay:.1s}
+.spinner-dot:nth-child(3){animation-delay:.2s}
+@keyframes spinBounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-8px);opacity:1}}
+
+.error-msg{background:rgba(226,75,74,.1);border:1px solid rgba(226,75,74,.2);color:var(--red);padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px;display:none;text-align:center;animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.success-msg{background:rgba(29,185,122,.1);border:1px solid rgba(29,185,122,.2);color:var(--green);padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px;display:none;text-align:center}
+
+.login-footer-text{text-align:center;margin-top:16px;font-size:10px;color:var(--text3);letter-spacing:.5px}
+.invite-note{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
+
+/* Typing Effect */
+.welcome-text{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);color:var(--text3);font-size:11px;letter-spacing:1px;z-index:51;opacity:0;transition:opacity .5s;white-space:nowrap;display:none}
+body.not-authenticated .welcome-text{display:block}
+.welcome-text.visible{opacity:1}
+.typing-cursor{display:inline-block;width:1px;height:14px;background:var(--blue);margin-left:2px;animation:curBlink .8s step-end infinite;vertical-align:middle}
+@keyframes curBlink{50%{opacity:0}}
+
+/* Logout button in header */
+.logout-btn{padding:6px 14px;background:rgba(226,75,74,.1);border:1px solid rgba(226,75,74,.3);border-radius:var(--radius-sm);color:var(--red);font-size:11px;cursor:pointer;font-family:var(--font);transition:all .15s;white-space:nowrap;flex-shrink:0}
+.logout-btn:hover{background:rgba(226,75,74,.2);border-color:var(--red)}
+
+/* User info in header */
+.user-info{display:flex;align-items:center;gap:8px;padding:4px 12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.user-info .user-name{font-size:12px;font-weight:600;color:var(--text)}
+.user-info .user-role{font-size:10px;color:var(--text3);text-transform:uppercase}
+
+@media(max-width:480px){
+  .login-container{padding:28px 20px}
+  .login-wrapper{border-radius:18px}
+  .login-wrapper::before{border-radius:18px}
+  .login-container{border-radius:16px}
+  .intro-title-text{font-size:26px}
+}
+/* ===== END LOGIN SYSTEM CSS ===== */
+
 </style>
 </head>
-<body class="light">
+<body class="light not-authenticated">
+
+<!-- ===== LOGIN SYSTEM ===== -->
+<!-- Floating Orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Stars + Particles Canvas -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Cinematic Intro -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-line"></div>
+  <div class="intro-eagle" id="introEagle"></div>
+  <div class="intro-title-text">COMMAND CENTER</div>
+  <div class="intro-sub-text">Zamil Food Industries</div>
+  <div class="intro-tagline">See Everything. Control Everything.</div>
+  <div class="intro-loading">
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+  </div>
+</div>
+
+<!-- Login Page -->
+<div class="login-page" id="loginPage">
+  <div class="login-wrapper">
+    <div class="login-container">
+      <div class="login-greeting" id="loginGreeting"></div>
+      <div class="login-logo">
+        <div class="logo-eagle" id="loginEagle"></div>
+        <div class="logo-text-title">Command Center</div>
+        <div class="logo-sub-text">Zamil Food Industries</div>
+        <div class="logo-tagline">See Everything. Control Everything.</div>
+      </div>
+
+      <div class="login-tabs">
+        <div class="tab-indicator" id="tabIndicator"></div>
+        <div class="login-tab active" onclick="authShowLogin()">🔐 Login</div>
+        <div class="login-tab" onclick="authShowRegister()">📝 Register</div>
+      </div>
+
+      <div class="error-msg" id="authErrorMsg"></div>
+      <div class="success-msg" id="authSuccessMsg"></div>
+
+      <!-- Login Form -->
+      <div id="authLoginForm">
+        <div class="login-form-group">
+          <label>Username</label>
+          <input type="text" id="authLoginUser" placeholder="Enter your username" autocomplete="username">
+        </div>
+        <div class="login-form-group">
+          <label>Password</label>
+          <div class="login-input-wrap">
+            <input type="password" id="authLoginPass" placeholder="Enter your password" autocomplete="current-password">
+            <button class="toggle-pass" onclick="authTogglePass('authLoginPass',this)" type="button">👁️</button>
+          </div>
+        </div>
+        <div class="remember-row">
+          <label onclick="authToggleRemember()">
+            <div class="toggle-switch on" id="rememberToggle"><div class="toggle-knob"></div></div>
+            Remember me
+          </label>
+        </div>
+        <button class="btn-login" onclick="authDoLogin()" id="authLoginBtn">
+          <span class="btn-text">🔐 Sign In</span>
+          <div class="spinner"><div class="spinner-dot"></div><div class="spinner-dot"></div><div class="spinner-dot"></div></div>
+        </button>
+        <div class="auto-note">🔒 You'll be remembered automatically on this device</div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="authRegisterForm" style="display:none">
+        <div class="login-form-group">
+          <label>Full Name</label>
+          <input type="text" id="authRegName" placeholder="e.g. Ahmed Ali">
+        </div>
+        <div class="login-form-group">
+          <label>Username</label>
+          <input type="text" id="authRegUser" placeholder="Choose a username">
+        </div>
+        <div class="login-form-group">
+          <label>Password</label>
+          <div class="login-input-wrap">
+            <input type="password" id="authRegPass" placeholder="Choose a password" oninput="authCheckStrength(this.value)">
+            <button class="toggle-pass" onclick="authTogglePass('authRegPass',this)" type="button">👁️</button>
+          </div>
+          <div class="pass-strength" id="authPassStrength">
+            <div class="strength-bar"><div class="strength-fill" id="authStrengthFill"></div></div>
+            <div class="strength-text" id="authStrengthText"></div>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label>Confirm Password</label>
+          <div class="login-input-wrap">
+            <input type="password" id="authRegPass2" placeholder="Re-enter password">
+            <button class="toggle-pass" onclick="authTogglePass('authRegPass2',this)" type="button">👁️</button>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label>Invite Code</label>
+          <input type="text" id="authRegInvite" placeholder="Enter invite code">
+          <div class="invite-note">* Ask your admin for the invite code</div>
+        </div>
+        <button class="btn-login btn-register" onclick="authDoRegister()" id="authRegBtn">
+          <span class="btn-text">📝 Create Account</span>
+          <div class="spinner"><div class="spinner-dot"></div><div class="spinner-dot"></div><div class="spinner-dot"></div></div>
+        </button>
+      </div>
+
+      <div class="login-footer-text">© 2026 Zamil Food Industries — Command Center v3.0</div>
+    </div>
+  </div>
+</div>
+
+<div class="welcome-text" id="welcomeText"><span id="typingTarget"></span><span class="typing-cursor"></span></div>
+<!-- ===== END LOGIN SYSTEM HTML ===== -->
+
 <main>
 <div class="header">
   <div class="hdr-left">
@@ -308,6 +590,11 @@ body.light .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
   <button class="upload-btn" onclick="askBackupPassword()" style="border-color:var(--amber,orange);color:var(--amber,orange)">📦 Backup</button>
   <button class="upload-btn" onclick="askDownloadPassword()" style="border-color:var(--blue);color:var(--blue)">⬇️ Download</button>
   <button class="upload-btn" id="modeBtn" onclick="toggleMode()" title="Toggle Light/Dark mode">🌙 Dark</button>
+  <div class="user-info" id="userInfoBox" style="display:none">
+    <span class="user-name" id="headerUserName">—</span>
+    <span class="user-role" id="headerUserRole">—</span>
+  </div>
+  <button class="logout-btn" id="logoutBtn" onclick="authDoLogout()" style="display:none">🚪 Logout</button>
   <div class="logo-area">
     <div class="conf-layer" id="confLayer"></div>
     <div id="logoTxt" class="logo-col" style="opacity: 1;"><span class="logo-zt" style="">Zamil</span><span class="logo-ft">Food Industries</span></div>
@@ -1760,6 +2047,8 @@ initBrandPage(); renderBrandTable(); renderBrandChart();
 function switchTab(i){
 document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
 document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',j===i));
+var _tn=['Overview','Expiry','Brands'];
+if(_tn[i]&&typeof authPagesVisited!=='undefined')authPagesVisited.push(_tn[i]);
 }
 function initLogo(){
 const txt=document.getElementById('logoTxt'),tri=document.getElementById('logoTri'),cl=document.getElementById('confLayer');
@@ -3331,6 +3620,414 @@ function checkPwd(){
     setTimeout(()=>{toast.classList.remove('show');setTimeout(()=>toast.remove(),500);},4000);
   }catch(e){}
 })();
+
+
+// ============================================================
+// LOGIN SYSTEM — Authentication & Session Management
+// ============================================================
+const AUTH_API = 'https://script.google.com/macros/s/AKfycbyp0Yt-Xagrc5q6JGHFntDxPb31MsYWXDXOSTtG0QfqP_6RBN4RGFzhYw3S0lyiHAOZzA/exec';
+
+// ===== EAGLE SVG GENERATOR (traced from reference image) =====
+function createEagleSVG(size){
+  const id='eg'+Math.random().toString(36).slice(2,6);
+  return `<svg class="eagle-svg" width="${size}" height="${size*0.42}" viewBox="0 0 240 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="${id}g" x1="40" y1="0" x2="200" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5bb8ff"/>
+      <stop offset="50%" stop-color="#2a6cb8"/>
+      <stop offset="100%" stop-color="#1a4a88"/>
+    </linearGradient>
+  </defs>
+  <g class="wing-L">
+    <path d="M110.4 5.0 L112.5 9.3 L113.6 14.6 L111.5 18.9 L111.5 23.2 L109.3 25.3 L101.8 18.9 L93.3 14.6 L45.2 14.6 L34.6 13.5 L17.5 9.3 L10.0 5.0 L16.4 13.5 L31.4 20.0 L49.5 23.2 L81.6 24.2 L78.3 26.4 L43.1 26.4 L23.9 22.1 L19.6 20.0 L16.4 16.7 L22.8 25.3 L26.0 27.4 L41.0 32.8 L46.3 33.8 L79.4 32.8 L86.9 33.8 L74.1 37.0 L63.4 38.1 L46.3 38.1 L33.5 36.0 L27.1 33.8 L23.9 31.7 L21.7 31.7 L30.3 39.2 L34.6 41.3 L46.3 44.5 L70.9 44.5 L88.0 40.2 L91.2 41.3 L84.8 44.5 L76.2 46.7 L60.2 48.8 L42.0 47.7 L30.3 43.4 L35.6 47.7 L42.0 50.9 L59.1 55.2 L69.8 55.2 L88.0 50.9 L91.2 48.8 L96.5 48.8 L94.4 50.9 L85.8 55.2 L73.0 58.4 L57.0 58.4 L38.8 54.1 L51.7 61.6 L64.5 64.8 L76.2 64.8 L82.6 63.7 L89.0 61.6 L102.9 54.1 L108.3 55.2 L112.5 60.5 L112.5 69.1 L108.3 83.0 L101.8 94.7 L109.3 88.3 L110.4 85.1 L112.5 83.0 L112.5 89.4 L109.3 94.7 L112.5 91.5 L116.8 81.9 L117.9 90.4 L120.0 93.6" fill="url(#${id}g)"/>
+  </g>
+  <g class="wing-R">
+    <path d="M120.0 93.6 L122.1 81.9 L126.4 91.5 L128.5 93.6 L125.3 85.1 L126.4 81.9 L129.6 88.3 L137.1 94.7 L130.7 83.0 L126.4 69.1 L126.4 60.5 L127.5 58.4 L132.8 54.1 L136.0 54.1 L153.1 62.7 L162.7 64.8 L174.5 64.8 L187.3 61.6 L195.8 57.3 L201.2 53.1 L188.3 57.3 L181.9 58.4 L165.9 58.4 L153.1 55.2 L144.6 50.9 L142.4 48.8 L147.8 48.8 L151.0 50.9 L169.1 55.2 L179.8 55.2 L196.9 50.9 L209.7 43.4 L195.8 47.7 L179.8 48.8 L162.7 46.7 L151.0 43.4 L147.8 41.3 L151.0 40.2 L160.6 43.4 L169.1 44.5 L192.6 44.5 L201.2 42.4 L208.6 39.2 L217.2 31.7 L215.0 31.7 L211.8 33.8 L205.4 36.0 L191.6 38.1 L174.5 38.1 L158.4 36.0 L151.0 33.8 L159.5 32.8 L192.6 33.8 L198.0 32.8 L212.9 27.4 L221.5 20.0 L222.5 16.7 L219.3 20.0 L208.6 24.2 L195.8 26.4 L160.6 26.4 L158.4 24.2 L162.7 23.2 L172.3 24.2 L189.4 23.2 L207.6 20.0 L217.2 16.7 L219.3 14.6 L222.5 13.5 L227.9 8.2 L228.9 5.0 L221.5 9.3 L204.4 13.5 L193.7 14.6 L145.6 14.6 L137.1 18.9 L132.8 23.2 L127.5 24.2 L125.3 14.6 L128.5 10.3 L130.7 10.3 L127.5 8.2 L125.3 5.0" fill="url(#${id}g)"/>
+  </g>
+</svg>`;
+}
+
+// ===== STARS + PARTICLE NETWORK BACKGROUND =====
+(function(){
+const canvas=document.getElementById('bgCanvas');
+if(!canvas)return;
+const ctx=canvas.getContext('2d');
+let particles=[], stars=[];
+let w,h,mouseX=0,mouseY=0;
+
+function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;initStars();}
+window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;});
+
+function initStars(){
+  stars=[];
+  const count=Math.floor((w*h)/4000);
+  for(let i=0;i<count;i++){
+    stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+.3,alpha:Math.random()*.5+.1,twinkleSpeed:Math.random()*.02+.005,twinklePhase:Math.random()*Math.PI*2,driftX:(Math.random()-.5)*.08,driftY:(Math.random()-.5)*.05});
+  }
+}
+
+function drawStars(time){
+  stars.forEach(s=>{
+    s.x+=s.driftX;s.y+=s.driftY;
+    if(s.x<-5)s.x=w+5;if(s.x>w+5)s.x=-5;
+    if(s.y<-5)s.y=h+5;if(s.y>h+5)s.y=-5;
+    const alpha=s.alpha*(0.5+0.5*Math.sin(time*s.twinkleSpeed+s.twinklePhase));
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(100,170,255,'+alpha+')';ctx.fill();
+    if(s.r>1.2){ctx.beginPath();ctx.arc(s.x,s.y,s.r*3,0,Math.PI*2);ctx.fillStyle='rgba(100,170,255,'+(alpha*.15)+')';ctx.fill();}
+  });
+}
+
+class Particle{
+  constructor(){this.reset();}
+  reset(){this.x=Math.random()*w;this.y=Math.random()*h;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.r=Math.random()*1.8+.8;this.alpha=Math.random()*.25+.08;this.color=Math.random()>.5?'55,138,221':'29,185,122';}
+  update(){const dx=this.x-mouseX,dy=this.y-mouseY;const dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){const f=(120-dist)/120*.5;this.vx+=dx/dist*f;this.vy+=dy/dist*f;}this.vx*=.98;this.vy*=.98;this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>w)this.vx*=-1;if(this.y<0||this.y>h)this.vy*=-1;}
+  draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle='rgba('+this.color+','+this.alpha+')';ctx.fill();}
+}
+for(let i=0;i<60;i++)particles.push(new Particle());
+
+function drawLines(){
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<140){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle='rgba(55,138,221,'+(1-dist/140)*.06+')';ctx.lineWidth=.5;ctx.stroke();}
+    }
+  }
+}
+
+let frameCount=0;
+function animate(){
+  if(!document.body.classList.contains('not-authenticated')){return;}
+  ctx.clearRect(0,0,w,h);drawStars(frameCount);particles.forEach(p=>{p.update();p.draw();});drawLines();frameCount++;requestAnimationFrame(animate);
+}
+resize();animate();
+window._authRestartCanvas=function(){resize();animate();};
+})();
+
+// ===== RENDER EAGLES =====
+document.getElementById('introEagle').innerHTML=createEagleSVG(200);
+document.getElementById('loginEagle').innerHTML=createEagleSVG(120);
+
+// ===== TIME-BASED GREETING =====
+(function(){
+  const h=new Date().getHours();
+  let g='';
+  if(h>=5&&h<12) g='☀️ Good Morning';
+  else if(h>=12&&h<17) g='🌤️ Good Afternoon';
+  else if(h>=17&&h<21) g='🌅 Good Evening';
+  else g='🌙 Welcome';
+  document.getElementById('loginGreeting').textContent=g;
+})();
+
+// ===== TYPING EFFECT =====
+function authTypeText(el,text,speed){
+  let i=0;el.textContent='';
+  (function t(){if(i<text.length){el.textContent+=text.charAt(i);i++;setTimeout(t,speed);}})();
+}
+
+// ===== SESSION MANAGEMENT =====
+let authSession = null;
+let authRememberMe = true;
+let authPagesVisited = [];
+
+function authGetSession(){
+  try{
+    const s = localStorage.getItem('zcc_session');
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  return null;
+}
+
+function authSaveSession(data){
+  try{
+    if(authRememberMe){
+      localStorage.setItem('zcc_session', JSON.stringify(data));
+    } else {
+      sessionStorage.setItem('zcc_session', JSON.stringify(data));
+    }
+  }catch(e){}
+}
+
+function authClearSession(){
+  try{localStorage.removeItem('zcc_session');sessionStorage.removeItem('zcc_session');}catch(e){}
+}
+
+// ===== CHECK EXISTING SESSION =====
+function authCheckSession(){
+  let session = authGetSession();
+  if(!session){
+    try{const s=sessionStorage.getItem('zcc_session');if(s)session=JSON.parse(s);}catch(e){}
+  }
+  if(session && session.username){
+    // Auto-login with saved session
+    authSession = session;
+    authEnterDashboard(session);
+    return true;
+  }
+  return false;
+}
+
+// ===== CINEMATIC INTRO SEQUENCE =====
+function authStartIntro(){
+  if(authCheckSession()){
+    // Already logged in — skip intro, go straight to dashboard
+    document.getElementById('introOverlay').classList.add('hidden');
+    return;
+  }
+  // Show cinematic intro then login
+  setTimeout(()=>{
+    document.getElementById('introOverlay').classList.add('fade-out');
+    document.getElementById('loginPage').classList.add('visible');
+    document.getElementById('welcomeText').classList.add('visible');
+    authTypeText(document.getElementById('typingTarget'),'Secure Access Portal — Zamil Food Industries',55);
+  },4200);
+}
+
+// ===== ENTER DASHBOARD =====
+function authEnterDashboard(userData){
+  // Remove not-authenticated class to show dashboard
+  document.body.classList.remove('not-authenticated');
+
+  // Hide login elements
+  document.getElementById('introOverlay').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('visible');
+  document.getElementById('welcomeText').classList.remove('visible');
+
+  // Show user info in header
+  document.getElementById('userInfoBox').style.display='flex';
+  document.getElementById('headerUserName').textContent='👤 '+userData.name;
+  document.getElementById('headerUserRole').textContent=userData.role;
+  document.getElementById('logoutBtn').style.display='block';
+
+  // Track pages visited
+  authPagesVisited = ['Overview'];
+
+  // Apply page access control
+  authApplyPageAccess(userData.pages);
+}
+
+// ===== PAGE ACCESS CONTROL =====
+function authApplyPageAccess(pages){
+  if(!pages || pages.toLowerCase()==='all') return; // Full access
+
+  const allowed = pages.split(',').map(p=>p.trim().toLowerCase());
+  const tabNames = ['overview','expiry','brands']; // Match tab order
+
+  document.querySelectorAll('.tabs .tab').forEach((tab,i)=>{
+    if(tabNames[i] && !allowed.includes(tabNames[i])){
+      tab.style.opacity='0.3';
+      tab.style.pointerEvents='none';
+      tab.title='Access restricted';
+    }
+  });
+}
+
+// ===== TAB SWITCHING (Login) =====
+function authShowLogin(){
+  document.getElementById('authLoginForm').style.display='block';
+  document.getElementById('authRegisterForm').style.display='none';
+  document.querySelectorAll('.login-tab')[0].classList.add('active');
+  document.querySelectorAll('.login-tab')[1].classList.remove('active');
+  document.getElementById('tabIndicator').classList.remove('right');
+  authHideMessages();authReanimateFields('authLoginForm');
+}
+function authShowRegister(){
+  document.getElementById('authLoginForm').style.display='none';
+  document.getElementById('authRegisterForm').style.display='block';
+  document.querySelectorAll('.login-tab')[0].classList.remove('active');
+  document.querySelectorAll('.login-tab')[1].classList.add('active');
+  document.getElementById('tabIndicator').classList.add('right');
+  authHideMessages();authReanimateFields('authRegisterForm');
+}
+function authReanimateFields(id){
+  document.querySelectorAll('#'+id+' .login-form-group').forEach((g,i)=>{
+    g.style.animation='none';g.offsetHeight;
+    g.style.animation='fieldAppear .4s ease '+(i*.1)+'s forwards';
+  });
+}
+function authHideMessages(){
+  document.getElementById('authErrorMsg').style.display='none';
+  document.getElementById('authSuccessMsg').style.display='none';
+}
+
+// ===== SHOW/HIDE PASSWORD =====
+function authTogglePass(id,btn){
+  const inp=document.getElementById(id);
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁️';}
+}
+
+// ===== PASSWORD STRENGTH =====
+function authCheckStrength(val){
+  const box=document.getElementById('authPassStrength'),fill=document.getElementById('authStrengthFill'),txt=document.getElementById('authStrengthText');
+  if(!val){box.style.display='none';return;}
+  box.style.display='block';
+  let s=0;
+  if(val.length>=4)s++;if(val.length>=8)s++;
+  if(/[A-Z]/.test(val))s++;if(/[0-9]/.test(val))s++;if(/[^A-Za-z0-9]/.test(val))s++;
+  const lv=[{w:'20%',c:'var(--red)',t:'Weak'},{w:'40%',c:'var(--red)',t:'Weak'},{w:'60%',c:'var(--amber)',t:'Fair'},{w:'80%',c:'var(--blue)',t:'Good'},{w:'100%',c:'var(--green)',t:'Strong'}][Math.min(s,4)];
+  fill.style.width=lv.w;fill.style.background=lv.c;txt.textContent=lv.t;txt.style.color=lv.c;
+}
+
+// ===== REMEMBER ME =====
+function authToggleRemember(){
+  authRememberMe=!authRememberMe;
+  document.getElementById('rememberToggle').classList.toggle('on',authRememberMe);
+  document.querySelector('.auto-note').innerHTML=authRememberMe?"🔒 You'll be remembered automatically on this device":"🔓 You'll be logged out when the browser closes";
+}
+
+// ===== LOGIN (REAL API) =====
+async function authDoLogin(){
+  const user=document.getElementById('authLoginUser').value.trim();
+  const pass=document.getElementById('authLoginPass').value;
+  if(!user||!pass){authShowError('Please fill in all fields');return;}
+
+  const btn=document.getElementById('authLoginBtn');
+  btn.classList.add('loading');
+
+  try{
+    const deviceInfo = navigator.userAgent.substring(0,100);
+    const res = await fetch(AUTH_API, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'login', username:user, password:pass, device:deviceInfo})
+    });
+    const data = await res.json();
+    btn.classList.remove('loading');
+
+    if(data.success){
+      authSession = {
+        username: data.user.username,
+        name: data.user.name,
+        role: data.user.role,
+        pages: data.user.pages,
+        visit_row: data.visit_row,
+        login_time: new Date().toISOString()
+      };
+      authSaveSession(authSession);
+
+      // Success animation
+      authShowSuccess('✅ Welcome back, '+data.user.name+'!');
+      setTimeout(()=>{
+        document.getElementById('loginPage').style.transition='opacity .5s ease';
+        document.getElementById('loginPage').style.opacity='0';
+        setTimeout(()=>authEnterDashboard(authSession),500);
+      },800);
+    } else {
+      authShowError(data.error || 'Login failed');
+    }
+  }catch(err){
+    btn.classList.remove('loading');
+    authShowError('Connection error. Please try again.');
+    console.error('Login error:',err);
+  }
+}
+
+// ===== REGISTER (REAL API) =====
+async function authDoRegister(){
+  const name=document.getElementById('authRegName').value.trim();
+  const user=document.getElementById('authRegUser').value.trim();
+  const pass=document.getElementById('authRegPass').value;
+  const pass2=document.getElementById('authRegPass2').value;
+  const invite=document.getElementById('authRegInvite').value.trim();
+
+  if(!name||!user||!pass||!invite){authShowError('Please fill in all fields');return;}
+  if(pass!==pass2){authShowError('Passwords do not match');return;}
+  if(pass.length<6){authShowError('Password must be at least 6 characters');return;}
+
+  const btn=document.getElementById('authRegBtn');
+  btn.classList.add('loading');
+
+  try{
+    const res = await fetch(AUTH_API, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'register', username:user, password:pass, name:name, invite_code:invite})
+    });
+    const data = await res.json();
+    btn.classList.remove('loading');
+
+    if(data.success){
+      authShowSuccess('✅ Account created successfully! You can now login.');
+      setTimeout(authShowLogin,2000);
+    } else {
+      authShowError(data.error || 'Registration failed');
+    }
+  }catch(err){
+    btn.classList.remove('loading');
+    authShowError('Connection error. Please try again.');
+    console.error('Register error:',err);
+  }
+}
+
+// ===== LOGOUT =====
+async function authDoLogout(){
+  if(!authSession) return;
+
+  // Track which tabs were visited
+  const visitedTabs = [...new Set(authPagesVisited)].join(', ');
+
+  // Send logout to API
+  try{
+    await fetch(AUTH_API, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'logout', visit_row:authSession.visit_row, pages_viewed:visitedTabs})
+    });
+  }catch(e){console.warn('Logout log error:',e);}
+
+  // Clear session
+  authClearSession();
+  authSession = null;
+
+  // Return to login
+  document.body.classList.add('not-authenticated');
+  document.getElementById('introOverlay').classList.add('hidden'); // Don't replay intro
+  document.getElementById('loginPage').classList.add('visible');
+  document.getElementById('loginPage').style.opacity='';
+  document.getElementById('loginPage').style.transition='';
+  document.getElementById('welcomeText').classList.add('visible');
+  authTypeText(document.getElementById('typingTarget'),'Session ended. Please log in again.',55);
+
+  // Hide header elements
+  document.getElementById('userInfoBox').style.display='none';
+  document.getElementById('logoutBtn').style.display='none';
+
+  // Clear form fields
+  document.getElementById('authLoginUser').value='';
+  document.getElementById('authLoginPass').value='';
+  authHideMessages();
+
+  // Restart canvas animation
+  if(typeof _authRestartCanvas==='function') _authRestartCanvas();
+}
+
+// ===== ERROR / SUCCESS MESSAGES =====
+function authShowError(msg){
+  const el=document.getElementById('authErrorMsg');el.innerHTML='❌ '+msg;el.style.display='block';
+  el.style.animation='none';el.offsetHeight;el.style.animation='shake .4s ease';
+  document.getElementById('authSuccessMsg').style.display='none';
+}
+function authShowSuccess(msg){
+  document.getElementById('authSuccessMsg').innerHTML=msg;
+  document.getElementById('authSuccessMsg').style.display='block';
+  document.getElementById('authErrorMsg').style.display='none';
+}
+
+// Tab visits tracked in original switchTab function
+
+// ===== ENTER KEY HANDLER =====
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && document.body.classList.contains('not-authenticated')){
+    if(document.getElementById('authLoginForm').style.display!=='none') authDoLogin();
+    else authDoRegister();
+  }
+});
+
+// ===== START =====
+authStartIntro();
 
 </script>
 
