@@ -3950,8 +3950,21 @@ async function authDoRegister(){
     btn.classList.remove('loading');
 
     if(data.success){
-      authShowSuccess('✅ Account created successfully! You can now login.');
-      setTimeout(authShowLogin,2000);
+      authShowSuccess('✅ Account created! Logging you in...');
+      // Auto-login with same credentials
+      setTimeout(async()=>{
+        try{
+          const lRes=await fetch(AUTH_API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'login',username:user,password:pass,device:navigator.userAgent.slice(0,100)})});
+          const lData=await lRes.json();
+          if(lData.success){
+            authSession={username:lData.user.username,name:lData.user.name,role:lData.user.role,pages:lData.user.pages,visit_row:lData.visit_row};
+            const rem=document.getElementById('authRemember');
+            if(rem&&rem.checked)authSaveSession(authSession);
+            else sessionStorage.setItem('zcc_session',JSON.stringify(authSession));
+            authEnterDashboard();
+          }else{authShowLogin();}
+        }catch(e){authShowLogin();}
+      },1000);
     } else {
       authShowError(data.error || 'Registration failed');
     }
