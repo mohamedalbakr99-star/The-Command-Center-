@@ -3755,23 +3755,33 @@ function authClearSession(){
 }
 
 // ===== CHECK EXISTING SESSION =====
-function authCheckSession(){
+async function authCheckSession(){
   let session = authGetSession();
   if(!session){
     try{const s=sessionStorage.getItem('zcc_session');if(s)session=JSON.parse(s);}catch(e){}
   }
   if(session && session.username){
-    // Auto-login with saved session
     authSession = session;
     authEnterDashboard(session);
+    // Register new visit in Visitors sheet
+    try{
+      const res=await fetch(AUTH_API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'log_visit',username:session.username,name:session.name,device:navigator.userAgent.slice(0,100)})});
+      const data=await res.json();
+      if(data.success&&data.visit_row){
+        authSession.visit_row=data.visit_row;
+        const stored=authGetSession();
+        if(stored){authSaveSession(authSession);}
+        else{try{sessionStorage.setItem('zcc_session',JSON.stringify(authSession));}catch(e){}}
+      }
+    }catch(e){console.warn('Session resume visit log error:',e);}
     return true;
   }
   return false;
 }
 
 // ===== CINEMATIC INTRO SEQUENCE =====
-function authStartIntro(){
-  if(authCheckSession()){
+async function authStartIntro(){
+  if(await authCheckSession()){
     // Already logged in — skip intro, go straight to dashboard
     document.getElementById('introOverlay').classList.add('hidden');
     return;
