@@ -3111,7 +3111,8 @@ if(newCode)newToOld[newCode]=code;
 });
 const fc={};
 fcData.forEach(r=>{
-const code=(r['Item Code']||'').trim();if(!code)return;
+let code=(r['Item Code']||'').trim();if(!code)return;
+if(code&&newToOld[code])code=newToOld[code];
 const v=toN(r['Sales Forcast Boxes']||r[' Sales Forcast Boxes ']||0);
 if(v>0)fc[code]=(fc[code]||0)+v;
 });
