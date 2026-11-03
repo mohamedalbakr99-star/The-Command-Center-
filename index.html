@@ -4037,6 +4037,25 @@ window.addEventListener('beforeunload',function(){
   }
 });
 
+// ===== AUTO-UPDATE CHECK (every 5 min) =====
+(function(){
+  var _appVer=null;
+  function authCheckUpdate(){
+    fetch(AUTH_API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'get_settings'})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.success&&d.settings&&d.settings.app_version){
+        if(_appVer===null){_appVer=d.settings.app_version;}
+        else if(d.settings.app_version!==_appVer){
+          location.reload();
+        }
+      }
+    }).catch(function(){});
+  }
+  // First check after 5 minutes, then every 5 minutes
+  setTimeout(function(){authCheckUpdate();setInterval(authCheckUpdate,300000);},300000);
+})();
+
 // ===== ERROR / SUCCESS MESSAGES =====
 function authShowError(msg){
   const el=document.getElementById('authErrorMsg');el.innerHTML='❌ '+msg;el.style.display='block';
