@@ -354,7 +354,7 @@ body.not-authenticated .orb{display:block}
 @keyframes eagleGlow{to{filter:drop-shadow(0 0 40px rgba(55,138,221,.7))}}
 
 /* Login Page */
-.login-page{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s ease;background:var(--bg)}
+.login-page{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s ease;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 0}
 .login-page.visible{opacity:1;pointer-events:all}
 
 /* Animated Gradient Border */
@@ -452,10 +452,18 @@ body.not-authenticated .welcome-text{display:block}
 .user-info .user-role{font-size:10px;color:var(--text3);text-transform:uppercase}
 
 @media(max-width:480px){
-  .login-container{padding:28px 20px}
+  .login-page{align-items:flex-start;padding:15px 0}
+  .login-container{padding:22px 18px}
   .login-wrapper{border-radius:18px}
   .login-wrapper::before{border-radius:18px}
   .login-container{border-radius:16px}
+  .login-form-group{margin-bottom:10px}
+  .login-tabs{margin:12px 0}
+  .login-logo .logo-text-title{font-size:20px}
+  .login-logo .logo-sub-text{font-size:10px;margin-top:2px}
+  .login-logo .logo-tagline{font-size:9px;margin-top:3px}
+  .btn-login{padding:10px;margin-top:8px}
+  .login-footer-text{margin-top:10px}
   .intro-title-text{font-size:26px}
 }
 /* ===== END LOGIN SYSTEM CSS ===== */
